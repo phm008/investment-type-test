@@ -284,29 +284,29 @@ const QUESTIONS = [
     {
         id: "Q3",
         question: {
-            kr: "종목을 살 때 가장 중요한 건?",
-            en: "What matters most when buying a stock?"
+            kr: "새 종목 진입할 때, 첫 매수 비중은 보통?",
+            en: "When opening a new position, your typical first allocation is:"
         },
         choices: [
             {
-                kr: "느낌. 그냥 올 것 같은 느낌",
-                en: "Vibes. It just feels right.",
-                scores: { A: -1 }
+                kr: "확신 오면 크게 간다. 한 번에 40~60%",
+                en: "If conviction is high, I go big: 40-60% in one shot.",
+                scores: { E: 1, C: 1, A: -1 }
             },
             {
-                kr: "최소 3일은 분석해야 확신이 생김",
-                en: "At least 3 days of research.",
-                scores: { A: 1 }
+                kr: "작게 시작(3~5%)하고, 맞으면 단계적으로 늘림",
+                en: "Start small (3-5%), then scale in only if thesis holds.",
+                scores: { A: 1, D: 1, C: -1 }
             },
             {
-                kr: "차트 패턴. 캔들이 말해줌",
-                en: "The chart pattern. Candles speak.",
-                scores: { D: 1 }
+                kr: "보통 10~20%. 내 리스크 룰 안에서만 진입",
+                en: "Usually 10-20%, strictly inside my risk rules.",
+                scores: { D: 1, A: 1, F: -1 }
             },
             {
-                kr: "이미 오르고 있다는 사실 그 자체",
-                en: "The fact that it's already going up.",
-                scores: { C: 1 }
+                kr: "1~2%만 넣고 지켜봄. 결국 기회만 보내는 편",
+                en: "I place 1-2% and watch... often miss the real move.",
+                scores: { E: -1, C: -1, F: 1 }
             }
         ]
     },
@@ -400,28 +400,28 @@ const QUESTIONS = [
     {
         id: "Q7",
         question: {
-            kr: "투자 관련 정보를 주로 어디서 얻음?",
-            en: "Where do you get investment info?"
+            kr: "미리 정한 매매 규칙(손절/익절/재진입), 실제로는?",
+            en: "Your pre-set trading rules (stop/take-profit/re-entry) are:"
         },
         choices: [
             {
-                kr: "유튜브/커뮤니티. 고수들 의견이 중요",
-                en: "YouTube / communities. Gotta hear the experts.",
-                scores: { A: -1, D: -1 }
+                kr: "없거나 대충. 분위기 따라 즉흥 대응",
+                en: "Loose or none. I react on vibes and market mood.",
+                scores: { A: -1, D: -1, C: 1, F: 1 }
             },
             {
-                kr: "직접 리포트 읽고 재무제표 분석",
-                en: "I read reports and financial statements myself.",
-                scores: { A: 1, F: -1 }
+                kr: "규칙 세우고 대부분 그대로 지킴",
+                en: "Clearly defined, and I follow them most of the time.",
+                scores: { A: 1, D: 1, F: -1 }
             },
             {
-                kr: "차트만 봄. 뉴스는 소음",
-                en: "Charts only. News is noise.",
-                scores: { D: 1 }
+                kr: "규칙은 있는데 급등/급락 나오면 자주 깨짐",
+                en: "I have rules, but break them often during fast moves.",
+                scores: { D: -1, C: 1, F: 1 }
             },
             {
-                kr: "정보 같은 거 안 봄. 이미 산 거 어쩔 수 없잖아",
-                en: "I don't look. What's done is done.",
+                kr: "규칙보다 멘탈이 먼저 무너짐. 손실 구간에서 회피",
+                en: "My mindset breaks before rules do. I avoid decisions in drawdowns.",
                 scores: { C: -1, F: 1 }
             }
         ]
@@ -429,29 +429,29 @@ const QUESTIONS = [
     {
         id: "Q8",
         question: {
-            kr: "내가 가지고 있는 종목에 악재가 떴다. 커뮤니티에서도 분위기가 안 좋다. 당신은?",
-            en: "Bad news drops about a stock you own. Online sentiment is turning ugly. You:"
+            kr: "보유 종목에 악재 속보가 떴다. 첫 30분, 가장 먼저 하는 행동은?",
+            en: "Breaking bad news hits a position you own. In the first 30 minutes, you:"
         },
         choices: [
             {
-                kr: "뉴스 확인하기도 전에 이미 팔았음",
-                en: "Already sold before finishing the headline.",
-                scores: { B: 1 }
+                kr: "일단 비중 일부 축소하고, 이후 다시 판단",
+                en: "Trim exposure first, then reassess once things calm down.",
+                scores: { B: 1, D: 1, F: -1 }
             },
             {
-                kr: "커뮤니티는 맨날 저러잖아. 내 분석을 믿어. 홀드",
-                en: "Forums are always dramatic. I trust my research. Hold.",
-                scores: { A: 1, B: -1 }
+                kr: "실적/가이던스/밸류 체크리스트부터 점검",
+                en: "Run through my checklist: earnings, guidance, valuation.",
+                scores: { A: 1, D: 1, C: -1 }
             },
             {
-                kr: "이 종목이랑 2년을 함께했어. 쉽게 못 버려",
-                en: "I've held this for 2 years. I can't just let go.",
-                scores: { B: -1, D: -1 }
+                kr: "원래 시나리오 안 깨졌으면 계획대로 유지",
+                en: "If the core thesis is intact, I stick to the original plan.",
+                scores: { B: -1, D: 1, A: 1 }
             },
             {
-                kr: "차트 봄. 지지선 안 깨졌으면 홀드. 뉴스는 후행",
-                en: "Check the chart. Support level intact? Then hold. News is lagging.",
-                scores: { D: 1 }
+                kr: "커뮤니티/차트만 무한 새로고침하며 멘탈 흔들림",
+                en: "Doom-scroll communities/charts and spiral emotionally.",
+                scores: { D: -1, C: 1, F: 1 }
             }
         ]
     }
@@ -495,11 +495,11 @@ function computeTypeScores(scores) {
         "01": (-A) * 1.2 + C * 0.8 + (-D) * 0.6 + (-F) * 0.2,
         "02": A * 1.4 + (-C) * 1.0 + D * 0.4,
         "03": B * 1.8 + C * 0.4 + (-F) * 0.2,
-        "04": (-B) * 1.4 + (-D) * 1.0 + E * 0.4 + (-C) * 0.4,
+        "04": ((-B) * 1.4 + (-D) * 1.0 + E * 0.4 + (-C) * 0.4) * 1.2,
         "05": C * 1.6 + (-A) * 0.8 + F * 0.3,
         "06": D * 1.8 + (-Math.abs(A)) * 0.4 + (-F) * 0.2,
         "07": (-D) * 1.6 + C * 1.0 + F * 0.8,
-        "08": (-B) * 1.2 + E * 1.1 + C * 0.3,
+        "08": ((-B) * 1.2 + E * 1.1 + C * 0.3) * 1.2,
         "09": (-C) * 1.6 + (-D) * 0.8 + (-E) * 0.2,
         "10": E * 2.2 + C * 0.3 + (-B) * 0.2,
         "11": (-E) * 2.2 + (-C) * 0.3 + A * 0.2,
