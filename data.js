@@ -238,7 +238,7 @@ const QUESTIONS = [
             {
                 kr: "왜 올랐는지 뉴스부터 30분 검색",
                 en: "Research for 30 minutes why it moved.",
-                scores: { A: 1 }
+                scores: { A: 1, F: -1 }
             },
             {
                 kr: "관심목록에 넣고… 내려오면 사야지",
@@ -262,7 +262,7 @@ const QUESTIONS = [
             {
                 kr: "-2%에 이미 잘랐는데? 난 지금 여기 없어",
                 en: "I already sold at -2%. I'm not here.",
-                scores: { B: 1 }
+                scores: { B: 1, F: -1 }
             },
             {
                 kr: "오히려 좋아. 추가매수 찬스",
@@ -325,7 +325,7 @@ const QUESTIONS = [
             {
                 kr: "3~5개. 적당히",
                 en: "3-5 stocks. Balanced.",
-                scores: {}
+                scores: { D: 1 }
             },
             {
                 kr: "15개 이상. 일단 1주씩은 사봐야 아는 거 아님?",
@@ -378,7 +378,7 @@ const QUESTIONS = [
             {
                 kr: "즉시 익절. 수익은 확정해야 진짜",
                 en: "Sell immediately. Profit isn't real until it's cash.",
-                scores: { B: 1 }
+                scores: { B: 1, C: 1, F: -1 }
             },
             {
                 kr: "더 간다. 이게 시작이야",
@@ -407,12 +407,12 @@ const QUESTIONS = [
             {
                 kr: "유튜브/커뮤니티. 고수들 의견이 중요",
                 en: "YouTube / communities. Gotta hear the experts.",
-                scores: { A: -1 }
+                scores: { A: -1, D: -1 }
             },
             {
                 kr: "직접 리포트 읽고 재무제표 분석",
                 en: "I read reports and financial statements myself.",
-                scores: { A: 1 }
+                scores: { A: 1, F: -1 }
             },
             {
                 kr: "차트만 봄. 뉴스는 소음",
@@ -457,63 +457,83 @@ const QUESTIONS = [
     }
 ];
 
-// Type mapping logic
-// Returns typeId based on axis scores
-function determineType(scores) {
-    const { A, B, C, D, E, F } = scores;
+const AXES = ["A", "B", "C", "D", "E", "F"];
 
-    // Determine relative ranks using simple comparison
-    // We'll score each type based on how well the scores match the condition
-    const typeScores = {
-        "01": 0, "02": 0, "03": 0, "04": 0, "05": 0, "06": 0,
-        "07": 0, "08": 0, "09": 0, "10": 0, "11": 0, "12": 0
+function _emptyAxisScores() {
+    return { A: 0, B: 0, C: 0, D: 0, E: 0, F: 0 };
+}
+
+function _computeAxisBaseline() {
+    const baseline = _emptyAxisScores();
+    QUESTIONS.forEach((q) => {
+        const qAvg = _emptyAxisScores();
+        q.choices.forEach((choice) => {
+            AXES.forEach((axis) => {
+                qAvg[axis] += choice.scores[axis] || 0;
+            });
+        });
+        AXES.forEach((axis) => {
+            baseline[axis] += qAvg[axis] / q.choices.length;
+        });
+    });
+    return baseline;
+}
+
+const AXIS_BASELINE = _computeAxisBaseline();
+
+function _normalizeScores(rawScores) {
+    const normalized = _emptyAxisScores();
+    AXES.forEach((axis) => {
+        normalized[axis] = (rawScores[axis] || 0) - AXIS_BASELINE[axis];
+    });
+    return normalized;
+}
+
+function computeTypeScores(scores) {
+    const { A, B, C, D, E, F } = _normalizeScores(scores);
+    return {
+        "01": (-A) * 1.2 + C * 0.8 + (-D) * 0.6 + (-F) * 0.2,
+        "02": A * 1.4 + (-C) * 1.0 + D * 0.4,
+        "03": B * 1.8 + C * 0.4 + (-F) * 0.2,
+        "04": (-B) * 1.4 + (-D) * 1.0 + E * 0.4 + (-C) * 0.4,
+        "05": C * 1.6 + (-A) * 0.8 + F * 0.3,
+        "06": D * 1.8 + (-Math.abs(A)) * 0.4 + (-F) * 0.2,
+        "07": (-D) * 1.6 + C * 1.0 + F * 0.8,
+        "08": (-B) * 1.2 + E * 1.1 + C * 0.3,
+        "09": (-C) * 1.6 + (-D) * 0.8 + (-E) * 0.2,
+        "10": E * 2.2 + C * 0.3 + (-B) * 0.2,
+        "11": (-E) * 2.2 + (-C) * 0.3 + A * 0.2,
+        "12": F * 2.0 + (-C) * 0.6 + (-A) * 0.2
     };
+}
 
-    // Type 01: Lowest A + Lowest F → very negative A and F
-    typeScores["01"] += (-A) + (-F);
+function rankTypes(scores) {
+    return Object.entries(computeTypeScores(scores))
+        .map(([id, score]) => ({ id, score }))
+        .sort((a, b) => {
+            if (b.score !== a.score) return b.score - a.score;
+            return a.id.localeCompare(b.id);
+        });
+}
 
-    // Type 02: Highest A + Lowest C
-    typeScores["02"] += A + (-C);
+function getConfidence(scores) {
+    const ranking = rankTypes(scores);
+    const top = ranking[0];
+    const second = ranking[1] || top;
+    const margin = Number((top.score - second.score).toFixed(4));
+    let level = "low";
+    if (margin >= 2.0) level = "high";
+    else if (margin >= 1.0) level = "medium";
 
-    // Type 03: Highest B
-    typeScores["03"] += B * 2;
+    return {
+        topId: top.id,
+        secondId: second.id,
+        margin,
+        level
+    };
+}
 
-    // Type 04: Lowest B + Low F
-    typeScores["04"] += (-B) + (-F) * 0.5;
-
-    // Type 05: Highest C + Low A
-    typeScores["05"] += C * 2 + (-A) * 0.5;
-
-    // Type 06: Highest D + Mid A (A near 0)
-    typeScores["06"] += D * 2 + (-Math.abs(A)) * 0.3;
-
-    // Type 07: Lowest D + Highest C
-    typeScores["07"] += (-D) * 1.5 + C * 0.5;
-
-    // Type 08: Lowest B + High E
-    typeScores["08"] += (-B) + E;
-
-    // Type 09: Lowest C + Low D
-    typeScores["09"] += (-C) * 2 + (-D) * 0.5;
-
-    // Type 10: Highest E
-    typeScores["10"] += E * 3;
-
-    // Type 11: Lowest E
-    typeScores["11"] += (-E) * 3;
-
-    // Type 12: Highest F
-    typeScores["12"] += F * 3;
-
-    // Find type with highest score
-    let bestType = "01";
-    let bestScore = -Infinity;
-    for (const [typeId, score] of Object.entries(typeScores)) {
-        if (score > bestScore) {
-            bestScore = score;
-            bestType = typeId;
-        }
-    }
-
-    return bestType;
+// Compatibility wrapper
+function determineType(scores) {
+    return rankTypes(scores)[0].id;
 }

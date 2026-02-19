@@ -403,6 +403,75 @@ body {
   color: #E87040;
 }
 
+.hidden {
+  display: none !important;
+}
+
+.result-mix {
+  margin: 0 20px 18px;
+  padding: 12px 14px;
+  background: #FFF7EE;
+  border: 1.5px solid #FFE1C9;
+  border-radius: 12px;
+}
+
+.mix-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 4px 0;
+}
+
+.mix-label {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-weight: 700;
+}
+
+.mix-value {
+  font-size: 14px;
+  color: var(--text);
+  font-weight: 700;
+  text-align: right;
+}
+
+.confidence-row {
+  padding-top: 8px;
+  margin-top: 6px;
+  border-top: 1px dashed #FFD4B3;
+}
+
+.confidence-badge {
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.confidence-badge.high {
+  background: #D8F6DF;
+  color: #1F7A38;
+}
+
+.confidence-badge.medium {
+  background: #FFF3C4;
+  color: #9A6A00;
+}
+
+.confidence-badge.low {
+  background: #FFE2E2;
+  color: #B53A3A;
+}
+
+.confidence-hint {
+  font-size: 12px;
+  color: #A86340;
+  line-height: 1.45;
+  margin-top: 8px;
+}
+
 /* === MEME IMAGE FRAME === */
 .meme-frame {
   margin: 0 20px 20px;

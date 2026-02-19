@@ -9,7 +9,9 @@ let state = {
   currentQ: 0,
   answers: [],
   totalScores: { A: 0, B: 0, C: 0, D: 0, E: 0, F: 0 },
-  resultTypeId: null
+  resultTypeId: null,
+  resultRanking: null,
+  confidence: null
 };
 
 // === i18n STRINGS ===
@@ -20,6 +22,13 @@ const i18n = {
     startHook: '설마 나만 맨날 고점에 사는 거 아니겠지...?',
     startMeta: '총 8문항 · 약 1분 소요',
     resultDesc: '내 투자 성격은 바로...',
+    primaryTypeLabel: '주유형',
+    secondaryTypeLabel: '보조유형',
+    confidenceLabel: '신뢰도',
+    confidenceHigh: 'High',
+    confidenceMedium: 'Medium',
+    confidenceLow: 'Low',
+    confidenceHintLow: '혼합형 성향이 강해요. 주/보조 유형을 함께 참고해보세요.',
     oppositeLabel: '🆚 나의 정반대 유형',
     meetTag: '우리 둘이 만나면?? 🤝',
     shareTitle: '내 결과 공유하기 📤',
@@ -34,6 +43,13 @@ const i18n = {
     startHook: "Please tell me I'm not the only one who always buys the top...",
     startMeta: '8 questions · ~1 minute',
     resultDesc: 'Your investor type is...',
+    primaryTypeLabel: 'Primary Type',
+    secondaryTypeLabel: 'Secondary Type',
+    confidenceLabel: 'Confidence',
+    confidenceHigh: 'High',
+    confidenceMedium: 'Medium',
+    confidenceLow: 'Low',
+    confidenceHintLow: 'Your profile is mixed. Check both primary and secondary types.',
     oppositeLabel: '🆚 Your Opposite Type',
     meetTag: 'If we ever meet... 🤝',
     shareTitle: 'Share my result 📤',
@@ -88,6 +104,9 @@ function setLang(lang) {
   if (document.getElementById('screen-question').classList.contains('active')) {
     renderQuestion(state.currentQ);
   }
+  if (document.getElementById('screen-result').classList.contains('active') && state.resultTypeId) {
+    _renderResult(state.resultTypeId, state.resultRanking, state.confidence);
+  }
 }
 
 function applyI18n() {
@@ -108,6 +127,8 @@ function startTest() {
   state.answers = [];
   state.totalScores = { A: 0, B: 0, C: 0, D: 0, E: 0, F: 0 };
   state.resultTypeId = null;
+  state.resultRanking = null;
+  state.confidence = null;
   showScreen('question');
   renderQuestion(0);
 }
@@ -176,16 +197,20 @@ function goBack() {
 
 // === SHOW RESULT ===
 function showResult() {
-  const typeId = determineType(state.totalScores);
+  const ranking = rankTypes(state.totalScores);
+  const confidence = getConfidence(state.totalScores);
+  const typeId = ranking[0].id;
   state.resultTypeId = typeId;
-  _renderResult(typeId);
+  state.resultRanking = ranking;
+  state.confidence = confidence;
+  _renderResult(typeId, ranking, confidence);
   const url = new URL(window.location.href);
   url.searchParams.set('type', typeId);
   window.history.replaceState({}, '', url.toString());
   showScreen('result');
 }
 
-function _renderResult(typeId) {
+function _renderResult(typeId, ranking, confidence) {
   const type = TYPES[typeId];
   const opposite = TYPES[type.oppositeId];
   const pairKey = getPairKey(typeId, type.oppositeId);
@@ -200,6 +225,40 @@ function _renderResult(typeId) {
   kwrap.innerHTML = type.keywords[lang].map(k =>
     `<span class="keyword-pill">${k}</span>`
   ).join('');
+
+  // 혼합형 정보 (주/보조 유형 + 신뢰도)
+  const mixEl = document.getElementById('result-mix');
+  const primaryNameEl = document.getElementById('result-primary-name');
+  const secondaryNameEl = document.getElementById('result-secondary-name');
+  const confidenceBadgeEl = document.getElementById('confidence-badge');
+  const confidenceHintEl = document.getElementById('confidence-hint');
+  const confidenceWrapEl = document.getElementById('confidence-wrap');
+
+  if (ranking && ranking.length > 1 && confidence) {
+    const primaryType = TYPES[ranking[0].id];
+    const secondaryType = TYPES[ranking[1].id];
+    const levelKey = `confidence${confidence.level.charAt(0).toUpperCase()}${confidence.level.slice(1)}`;
+
+    mixEl.classList.remove('hidden');
+    primaryNameEl.textContent = `${primaryType.emoji} ${primaryType.name[lang]}`;
+    secondaryNameEl.textContent = `${secondaryType.emoji} ${secondaryType.name[lang]}`;
+
+    confidenceBadgeEl.classList.remove('high', 'medium', 'low');
+    confidenceBadgeEl.classList.add(confidence.level);
+    confidenceBadgeEl.textContent = i18n[lang][levelKey];
+
+    if (confidence.level === 'low') {
+      confidenceWrapEl.classList.add('low');
+      confidenceHintEl.textContent = i18n[lang].confidenceHintLow;
+      confidenceHintEl.classList.remove('hidden');
+    } else {
+      confidenceWrapEl.classList.remove('low');
+      confidenceHintEl.textContent = '';
+      confidenceHintEl.classList.add('hidden');
+    }
+  } else {
+    mixEl.classList.add('hidden');
+  }
 
   // 정반대 유형
   document.getElementById('opposite-emoji').textContent = opposite.emoji;
@@ -324,7 +383,9 @@ function resetTest() {
     currentQ: 0,
     answers: [],
     totalScores: { A: 0, B: 0, C: 0, D: 0, E: 0, F: 0 },
-    resultTypeId: null
+    resultTypeId: null,
+    resultRanking: null,
+    confidence: null
   };
   const url = new URL(window.location.href);
   url.searchParams.delete('type');
@@ -339,7 +400,9 @@ function resetTest() {
   const typeParam = params.get('type');
   if (typeParam && TYPES[typeParam]) {
     state.resultTypeId = typeParam;
-    _renderResult(typeParam);
+    state.resultRanking = null;
+    state.confidence = null;
+    _renderResult(typeParam, null, null);
     showScreen('result');
   }
 })();
