@@ -1,321 +1,345 @@
 // ===================================================
-// 투자 유형 테스트 - Application Logic
-// Investment Personality Test App
+// 투자 유형 테스트 — App Logic v2
+// 나노바나나 | Casual / Meme Style
 // ===================================================
 
-// ── State ──────────────────────────────────────────
-const state = {
-    lang: 'kr',       // 'kr' | 'en'
-    currentQ: 0,      // 0-indexed
-    answers: [],      // Array of choice indices
-    scores: { A: 0, B: 0, C: 0, D: 0, E: 0, F: 0 },
-    resultTypeId: null,
+// === STATE ===
+let state = {
+  lang: 'kr',
+  currentQ: 0,
+  answers: [],
+  totalScores: { A: 0, B: 0, C: 0, D: 0, E: 0, F: 0 },
+  resultTypeId: null
 };
 
-// ── i18n strings ──────────────────────────────────
+// === i18n STRINGS ===
 const i18n = {
-    kr: {
-        startTitle: '투자 유형 테스트',
-        startTitleEn: 'Investment Personality Test',
-        startDesc: '8가지 질문으로 나의 투자 성격 유형을 발견하세요.\n총 12가지 유형 중 당신은 어떤 투자자?',
-        startBtn: '테스트 시작하기 →',
-        shareHint: '결과를 SNS에 공유해보세요 📸',
-        next: '다음',
-        analyzing: '유형 분석 중…',
-        analyzingSub: '당신의 투자 DNA를 해독하고 있어요',
-        resultLabel: '결과가 나왔어요! 🎉',
-        myType: '나의 투자 유형',
-        oppositeType: '나의 정반대 유형',
-        meetLabel: '서로 만나면',
-        saveCard: '📸 결과 카드 저장',
-        copyLink: '🔗 링크 복사',
-        restart: '🔄 다시하기',
-        copied: '링크가 복사되었어요!',
-        savedNotice: '이미지로 저장하려면 스크린샷을 이용해주세요',
-        q: '질문',
-    },
-    en: {
-        startTitle: 'Investment\nPersonality Test',
-        startTitleEn: '투자 유형 테스트',
-        startDesc: 'Answer 8 questions to discover your investment personality type.\nWhich of 12 investor archetypes are you?',
-        startBtn: 'Start the Test →',
-        shareHint: 'Share your results on social media 📸',
-        next: 'Next',
-        analyzing: 'Analyzing your type…',
-        analyzingSub: 'Decoding your investment DNA',
-        resultLabel: 'Your result is ready! 🎉',
-        myType: 'Your Investment Type',
-        oppositeType: 'Your Opposite Type',
-        meetLabel: 'When They Meet',
-        saveCard: '📸 Save Result Card',
-        copyLink: '🔗 Copy Link',
-        restart: '🔄 Try Again',
-        copied: 'Link copied!',
-        savedNotice: 'Take a screenshot to save as image',
-        q: 'Question',
-    }
+  kr: {
+    startTitle: '나는 어떤\n투자 유형일까?',
+    startSub: '8문항으로 알아보는 내 투자 성격 🤔',
+    startHook: '설마 나만 맨날 고점에 사는 거 아니겠지...?',
+    startMeta: '총 8문항 · 약 1분 소요',
+    resultDesc: '내 투자 성격은 바로...',
+    oppositeLabel: '🆚 나의 정반대 유형',
+    meetTag: '우리 둘이 만나면?? 🤝',
+    shareTitle: '내 결과 공유하기 📤',
+    copyLink: '링크 복사',
+    retry: '🔄 다시하기',
+    toastCopied: '🔗 링크가 복사됐어요!',
+    shareText: '나는 투자 유형 테스트에서 {{name}} 나왔어!\n너도 해봐 👇'
+  },
+  en: {
+    startTitle: "What's My\nInvestor Type?",
+    startSub: '8 questions reveal your investing personality 🤔',
+    startHook: "Please tell me I'm not the only one who always buys the top...",
+    startMeta: '8 questions · ~1 minute',
+    resultDesc: 'Your investor type is...',
+    oppositeLabel: '🆚 Your Opposite Type',
+    meetTag: 'If we ever meet... 🤝',
+    shareTitle: 'Share my result 📤',
+    copyLink: 'Copy Link',
+    retry: '🔄 Try Again',
+    toastCopied: '🔗 Link copied!',
+    shareText: 'I got {{name}} on the Investor Type Test!\nTake it too 👇'
+  }
 };
 
-const t = (key) => i18n[state.lang][key];
+// === MEME IMAGE MAP ===
+const MEME_IMAGES = {
+  "01": "memes/meme_01_pray.png",
+  "02": "memes/meme_02_study.png",
+  "03": "memes/meme_03_cut.png",
+  "04": "memes/meme_04_hold.png",
+  "05": "memes/meme_05_fomo.png",
+  "06": "memes/meme_06_chart.png",
+  "07": "memes/meme_07_revenge.png",
+  "08": "memes/meme_08_dip.png",
+  "09": "memes/meme_09_blind.png",
+  "10": "memes/meme_10_allin.png",
+  "11": "memes/meme_11_diverse.png",
+  "12": "memes/meme_12_regret.png"
+};
 
-// ── Screen Router ──────────────────────────────────
+// === CHOICE EMOJIS ===
+const CHOICE_EMOJIS = [
+  ['🔥', '📊', '⏳', '😢'],   // Q1
+  ['✂️', '📉', '🙈', '😭'],  // Q2
+  ['🔮', '📚', '🕯️', '📈'],  // Q3
+  ['💎', '⚖️', '🏪', '😶'],  // Q4
+  ['🚀', '🧮', '😩', '💪'],  // Q5
+  ['💰', '🚀', '🤯', '📱'],  // Q6
+  ['📺', '📜', '🕯️', '🙅'],  // Q7
+  ['✂️', '💪', '🐾', '📉'],  // Q8
+];
+
+// === SCREEN NAVIGATION ===
 function showScreen(id) {
-    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-    document.getElementById(`screen-${id}`).classList.add('active');
-    window.scrollTo(0, 0);
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + id).classList.add('active');
+  window.scrollTo(0, 0);
 }
 
-// ── Language Toggle ────────────────────────────────
+// === LANGUAGE ===
 function setLang(lang) {
-    state.lang = lang;
-    document.querySelectorAll('.lang-btn').forEach(btn => {
-        btn.classList.toggle('active', btn.dataset.lang === lang);
-    });
-    renderStartScreen();
+  state.lang = lang;
+  document.getElementById('btn-kr').classList.toggle('active', lang === 'kr');
+  document.getElementById('btn-en').classList.toggle('active', lang === 'en');
+  applyI18n();
+  if (document.getElementById('screen-question').classList.contains('active')) {
+    renderQuestion(state.currentQ);
+  }
 }
 
-// ── Render Start Screen ────────────────────────────
-function renderStartScreen() {
-    document.getElementById('start-title').textContent = state.lang === 'kr' ? '투자 유형 테스트' : 'Investment\nPersonality Test';
-    document.getElementById('start-title-en').textContent = state.lang === 'kr' ? 'Investment Personality Test' : '투자 유형 테스트';
-    document.getElementById('start-desc').textContent = t('startDesc');
-    document.getElementById('btn-start').textContent = t('startBtn');
-    document.getElementById('start-share-hint').textContent = t('shareHint');
+function applyI18n() {
+  const strings = i18n[state.lang];
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.getAttribute('data-i18n');
+    if (strings[key]) el.textContent = strings[key];
+  });
+  const btnStart = document.getElementById('btn-start');
+  if (btnStart) {
+    btnStart.textContent = state.lang === 'kr' ? '테스트 시작하기 🚀' : 'Start Test 🚀';
+  }
 }
 
-// ── Start Test ─────────────────────────────────────
+// === START TEST ===
 function startTest() {
-    state.currentQ = 0;
-    state.answers = [];
-    state.scores = { A: 0, B: 0, C: 0, D: 0, E: 0, F: 0 };
-    state.resultTypeId = null;
-    showScreen('question');
-    renderQuestion();
+  state.currentQ = 0;
+  state.answers = [];
+  state.totalScores = { A: 0, B: 0, C: 0, D: 0, E: 0, F: 0 };
+  state.resultTypeId = null;
+  showScreen('question');
+  renderQuestion(0);
 }
 
-// ── Render Question ────────────────────────────────
-function renderQuestion() {
-    const q = QUESTIONS[state.currentQ];
-    const qIndex = state.currentQ;
-    const totalQ = QUESTIONS.length;
+// === RENDER QUESTION ===
+function renderQuestion(qIndex) {
+  const q = QUESTIONS[qIndex];
+  const lang = state.lang;
+  const pct = (qIndex / QUESTIONS.length) * 100;
+  document.getElementById('progress-fill').style.width = pct + '%';
+  document.getElementById('progress-label').textContent = `${qIndex + 1} / ${QUESTIONS.length}`;
+  document.getElementById('q-badge').textContent = `Q${qIndex + 1}`;
+  document.getElementById('q-text').textContent = q.question[lang];
 
-    // Progress
-    const progress = ((qIndex) / totalQ) * 100;
-    document.getElementById('progress-fill').style.width = `${progress}%`;
-    document.getElementById('progress-current').textContent = qIndex + 1;
-    document.getElementById('progress-total').textContent = totalQ;
+  const list = document.getElementById('choices-list');
+  list.innerHTML = '';
+  const emojis = CHOICE_EMOJIS[qIndex] || ['🔵', '🟡', '🟢', '🔴'];
 
-    // Question badge & text
-    document.getElementById('question-id-badge').textContent = `Q${qIndex + 1}`;
-    document.getElementById('question-text-kr').textContent = q.question.kr;
-    document.getElementById('question-text-en').textContent = q.question.en;
-
-    // Choices
-    const list = document.getElementById('choices-list');
-    list.innerHTML = '';
-    q.choices.forEach((choice, i) => {
-        const card = document.createElement('div');
-        card.className = 'choice-card';
-        card.dataset.index = i;
-        card.innerHTML = `
-      <div class="choice-radio"></div>
-      <div class="choice-text">
-        <div class="choice-text-kr">${choice.kr}</div>
-        <div class="choice-text-en">${choice.en}</div>
-      </div>
+  q.choices.forEach((choice, i) => {
+    const card = document.createElement('button');
+    card.className = 'choice-card';
+    card.innerHTML = `
+      <span class="choice-emoji">${emojis[i]}</span>
+      <span class="choice-text">${choice[lang]}</span>
     `;
-        card.addEventListener('click', () => selectChoice(i));
-        list.appendChild(card);
-    });
-
-    // Next button
-    const btnNext = document.getElementById('btn-next');
-    btnNext.disabled = true;
-    btnNext.textContent = state.currentQ < QUESTIONS.length - 1 ? `${t('next')} →` : `결과 보기 ✨`;
-
-    // Restore previous answer if navigating back
-    if (state.answers[qIndex] !== undefined) {
-        selectChoice(state.answers[qIndex], false);
-    }
+    card.onclick = () => selectChoice(qIndex, i, choice.scores);
+    list.appendChild(card);
+  });
 }
 
-// ── Select Choice ──────────────────────────────────
-function selectChoice(index, animate = true) {
-    document.querySelectorAll('.choice-card').forEach(c => c.classList.remove('selected'));
-    document.querySelector(`.choice-card[data-index="${index}"]`).classList.add('selected');
-    state.answers[state.currentQ] = index;
-    document.getElementById('btn-next').disabled = false;
-
-    if (animate) {
-        const card = document.querySelector(`.choice-card[data-index="${index}"]`);
-        card.style.transform = 'translateX(6px)';
-        setTimeout(() => { card.style.transform = ''; }, 150);
-    }
-}
-
-// ── Next Question ──────────────────────────────────
-function nextQuestion() {
-    if (state.answers[state.currentQ] === undefined) return;
-
-    // Apply scores for this answer
-    const q = QUESTIONS[state.currentQ];
-    const choiceScores = q.choices[state.answers[state.currentQ]].scores;
-    for (const [axis, val] of Object.entries(choiceScores)) {
-        state.scores[axis] = (state.scores[axis] || 0) + val;
-    }
-
-    state.currentQ++;
-
-    if (state.currentQ >= QUESTIONS.length) {
-        // Done — show loading then result
-        showScreen('loading');
-        document.getElementById('loading-text').textContent = t('analyzing');
-        document.getElementById('loading-sub').textContent = t('analyzingSub');
-        setTimeout(() => {
-            computeResult();
-            renderResult();
-            showScreen('result');
-        }, 1800);
+// === SELECT CHOICE ===
+function selectChoice(qIndex, choiceIndex, scores) {
+  document.querySelectorAll('.choice-card').forEach((c, i) => {
+    c.classList.toggle('selected', i === choiceIndex);
+  });
+  for (const [axis, val] of Object.entries(scores)) {
+    state.totalScores[axis] = (state.totalScores[axis] || 0) + val;
+  }
+  state.answers[qIndex] = { choiceIndex, scores };
+  setTimeout(() => {
+    if (qIndex + 1 < QUESTIONS.length) {
+      state.currentQ = qIndex + 1;
+      renderQuestion(state.currentQ);
     } else {
-        renderQuestion();
+      showResult();
     }
+  }, 350);
 }
 
-// ── Compute Result ─────────────────────────────────
-function computeResult() {
-    state.resultTypeId = determineType(state.scores);
-}
-
-// ── Render Result ──────────────────────────────────
-function renderResult() {
-    const lang = state.lang;
-    const typeId = state.resultTypeId;
-    const myType = TYPES[typeId];
-    const oppType = TYPES[myType.oppositeId];
-    const pairKey = getPairKey(typeId, myType.oppositeId);
-    const pair = PAIRS[pairKey];
-
-    // Result label
-    document.getElementById('result-label').textContent = t('resultLabel');
-
-    // Main card
-    document.getElementById('result-my-type-label').textContent = t('myType');
-    document.getElementById('result-type-number').textContent = `Type ${myType.id}`;
-    document.getElementById('result-emoji').textContent = myType.emoji;
-    document.getElementById('result-type-name-kr').textContent = myType.name.kr;
-    document.getElementById('result-type-name-en').textContent = myType.name.en;
-    document.getElementById('result-tagline-kr').textContent = `"${myType.tagline.kr}"`;
-    document.getElementById('result-tagline-en').textContent = `"${myType.tagline.en}"`;
-
-    // Keywords
-    const kw = lang === 'kr' ? myType.keywords.kr : myType.keywords.en;
-    const kwContainer = document.getElementById('result-keywords');
-    kwContainer.innerHTML = kw.map(w => `<span class="keyword-chip">${w}</span>`).join('');
-
-    // Opposite type card
-    document.getElementById('opposite-label').textContent = t('oppositeType');
-    document.getElementById('opposite-emoji').textContent = oppType.emoji;
-    document.getElementById('opposite-name-kr').textContent = oppType.name.kr;
-    document.getElementById('opposite-name-en').textContent = oppType.name.en;
-    document.getElementById('opposite-tagline').textContent = `"${oppType.tagline[lang]}"`;
-
-    // Meet line
-    document.getElementById('meet-label').textContent = t('meetLabel');
-    document.getElementById('meet-text-kr').textContent = `"${pair.meetLine.kr}"`;
-    document.getElementById('meet-text-en').textContent = `"${pair.meetLine.en}"`;
-
-    // Action buttons text
-    document.getElementById('btn-save').textContent = t('saveCard');
-    document.getElementById('btn-copy').textContent = t('copyLink');
-    document.getElementById('btn-restart').textContent = t('restart');
-}
-
-// ── Share / Copy ───────────────────────────────────
-function saveCard() {
-    showToast(t('savedNotice'));
-}
-
-function copyLink() {
-    const typeId = state.resultTypeId;
-    const url = `${window.location.origin}${window.location.pathname}?type=${typeId}`;
-    navigator.clipboard.writeText(url).then(() => {
-        showToast(t('copied'));
-    }).catch(() => {
-        showToast(t('copied'));
-    });
-}
-
-function restart() {
-    state.scores = { A: 0, B: 0, C: 0, D: 0, E: 0, F: 0 };
-    state.answers = [];
-    state.currentQ = 0;
-    state.resultTypeId = null;
+// === GO BACK ===
+function goBack() {
+  if (state.currentQ === 0) {
     showScreen('start');
+    return;
+  }
+  const prev = state.answers[state.currentQ - 1];
+  if (prev) {
+    for (const [axis, val] of Object.entries(prev.scores)) {
+      state.totalScores[axis] = (state.totalScores[axis] || 0) - val;
+    }
+    delete state.answers[state.currentQ - 1];
+  }
+  state.currentQ -= 1;
+  renderQuestion(state.currentQ);
 }
 
-// ── Toast ──────────────────────────────────────────
+// === SHOW RESULT ===
+function showResult() {
+  const typeId = determineType(state.totalScores);
+  state.resultTypeId = typeId;
+  _renderResult(typeId);
+  const url = new URL(window.location.href);
+  url.searchParams.set('type', typeId);
+  window.history.replaceState({}, '', url.toString());
+  showScreen('result');
+}
+
+function _renderResult(typeId) {
+  const type = TYPES[typeId];
+  const opposite = TYPES[type.oppositeId];
+  const pairKey = getPairKey(typeId, type.oppositeId);
+  const pair = PAIRS[pairKey];
+  const lang = state.lang;
+
+  document.getElementById('result-emoji').textContent = type.emoji;
+  document.getElementById('result-name').textContent = type.name[lang];
+  document.getElementById('result-tagline').textContent = type.tagline[lang];
+
+  const kwrap = document.getElementById('result-keywords');
+  kwrap.innerHTML = type.keywords[lang].map(k =>
+    `<span class="keyword-pill">${k}</span>`
+  ).join('');
+
+  // 정반대 유형
+  document.getElementById('opposite-emoji').textContent = opposite.emoji;
+  document.getElementById('opposite-name').textContent = opposite.name[lang];
+  document.getElementById('opposite-meet').textContent = pair ? pair.meetLine[lang] : '';
+
+  // meetTag i18n 적용
+  const meetTagEl = document.querySelector('.meet-tag');
+  if (meetTagEl) meetTagEl.textContent = i18n[lang].meetTag;
+
+  // 밈 이미지
+  const memeImg = document.getElementById('meme-img');
+  const memePh = document.getElementById('meme-placeholder');
+  const phEmoji = document.getElementById('meme-ph-emoji');
+
+  memeImg.classList.remove('loaded');
+  memePh.style.display = 'flex';
+
+  memeImg.onload = () => {
+    memeImg.classList.add('loaded');
+    memePh.style.display = 'none';
+  };
+  memeImg.onerror = () => {
+    if (phEmoji) phEmoji.textContent = type.emoji;
+  };
+  memeImg.src = MEME_IMAGES[typeId];
+
+  applyI18n();
+}
+
+// ===========================
+// SHARE FUNCTIONS
+// ===========================
+
+function _getShareUrl() {
+  const url = new URL(window.location.href);
+  if (state.resultTypeId) url.searchParams.set('type', state.resultTypeId);
+  return url.toString();
+}
+
+function _getShareText() {
+  const lang = state.lang;
+  const typeId = state.resultTypeId;
+  const typeName = typeId ? TYPES[typeId].name[lang] : '';
+  return i18n[lang].shareText.replace('{{name}}', typeName);
+}
+
+// 링크 복사 (기존)
+function shareResult() {
+  const url = _getShareUrl();
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(url).then(() => showToast());
+  } else {
+    const el = document.createElement('textarea');
+    el.value = url;
+    document.body.appendChild(el);
+    el.select();
+    document.execCommand('copy');
+    document.body.removeChild(el);
+    showToast();
+  }
+}
+
+// 카카오톡 — 모바일: Web Share API, 데스크탑: 링크 복사 + 안내
+function shareKakao() {
+  const url = _getShareUrl();
+  const text = _getShareText();
+  // 모바일에서는 Web Share API 사용 (시스템 공유시트 → 카카오톡 포함)
+  if (navigator.share) {
+    navigator.share({
+      title: state.lang === 'kr' ? '나는 어떤 투자 유형일까?' : 'What Investor Type Am I?',
+      text: text,
+      url: url
+    }).catch(() => { }); // 사용자가 취소해도 에러 무시
+  } else {
+    // 데스크탑 fallback: 링크 복사 + toast
+    shareResult();
+    showToast(state.lang === 'kr'
+      ? '💛 링크를 복사했어요! 카카오톡에 붙여넣기 해주세요'
+      : '💛 Link copied! Paste it in KakaoTalk');
+    return;
+  }
+}
+
+// X (Twitter)
+function shareTwitter() {
+  const url = _getShareUrl();
+  const text = _getShareText();
+  const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text + '\n')}&url=${encodeURIComponent(url)}`;
+  window.open(tweetUrl, '_blank', 'noopener,noreferrer');
+}
+
+// WhatsApp
+function shareWhatsapp() {
+  const url = _getShareUrl();
+  const text = _getShareText();
+  const waUrl = `https://wa.me/?text=${encodeURIComponent(text + '\n' + url)}`;
+  window.open(waUrl, '_blank', 'noopener,noreferrer');
+}
+
+// Facebook
+function shareFacebook() {
+  const url = _getShareUrl();
+  const fbUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`;
+  window.open(fbUrl, '_blank', 'noopener,noreferrer', 'width=600,height=400');
+}
+
+// ===========================
+// TOAST
+// ===========================
 function showToast(msg) {
-    const toast = document.getElementById('toast');
-    toast.textContent = msg;
-    toast.classList.add('show');
-    setTimeout(() => toast.classList.remove('show'), 2800);
+  const toast = document.getElementById('toast');
+  toast.textContent = msg || i18n[state.lang].toastCopied;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 2800);
 }
 
-// ── URL param: ?type=07 ────────────────────────────
-function checkUrlType() {
-    const params = new URLSearchParams(window.location.search);
-    const typeParam = params.get('type');
-    if (typeParam && TYPES[typeParam]) {
-        state.resultTypeId = typeParam;
-        // Compute fake scores so the render works
-        renderResult();
-        showScreen('result');
-        return true;
-    }
-    return false;
+// === RESET ===
+function resetTest() {
+  state = {
+    lang: state.lang,
+    currentQ: 0,
+    answers: [],
+    totalScores: { A: 0, B: 0, C: 0, D: 0, E: 0, F: 0 },
+    resultTypeId: null
+  };
+  const url = new URL(window.location.href);
+  url.searchParams.delete('type');
+  window.history.replaceState({}, '', url.toString());
+  showScreen('start');
 }
 
-// ── Init ───────────────────────────────────────────
-document.addEventListener('DOMContentLoaded', () => {
-    // Language buttons
-    document.querySelectorAll('.lang-btn').forEach(btn => {
-        btn.addEventListener('click', () => setLang(btn.dataset.lang));
-    });
-
-    // Start button
-    document.getElementById('btn-start').addEventListener('click', startTest);
-
-    // Next button
-    document.getElementById('btn-next').addEventListener('click', nextQuestion);
-
-    // Back button on question screen
-    document.getElementById('btn-back').addEventListener('click', () => {
-        if (state.currentQ > 0) {
-            // Undo last score
-            const prevQ = QUESTIONS[state.currentQ - 1];
-            const prevAnswer = state.answers[state.currentQ - 1];
-            if (prevAnswer !== undefined) {
-                const choiceScores = prevQ.choices[prevAnswer].scores;
-                for (const [axis, val] of Object.entries(choiceScores)) {
-                    state.scores[axis] -= val;
-                }
-                delete state.answers[state.currentQ - 1];
-            }
-            state.currentQ--;
-            renderQuestion();
-        } else {
-            showScreen('start');
-        }
-    });
-
-    // Result action buttons
-    document.getElementById('btn-save').addEventListener('click', saveCard);
-    document.getElementById('btn-copy').addEventListener('click', copyLink);
-    document.getElementById('btn-restart').addEventListener('click', restart);
-
-    // Check URL params
-    if (!checkUrlType()) {
-        renderStartScreen();
-        showScreen('start');
-    }
-});
+// === INIT ===
+(function init() {
+  applyI18n();
+  const params = new URLSearchParams(window.location.search);
+  const typeParam = params.get('type');
+  if (typeParam && TYPES[typeParam]) {
+    state.resultTypeId = typeParam;
+    _renderResult(typeParam);
+    showScreen('result');
+  }
+})();

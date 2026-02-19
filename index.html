@@ -1,152 +1,159 @@
 <!DOCTYPE html>
 <html lang="ko">
+
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="8가지 질문으로 나의 투자 성격 유형을 발견하세요. 12가지 투자자 유형 중 당신은? | Discover your investment personality in 8 questions." />
-  <title>투자 유형 테스트 — Investment Personality Test</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <title>나는 어떤 투자 유형일까? 🤔 | 나노바나나</title>
+  <meta name="description" content="8문항으로 알아보는 내 투자 성격 유형. 기도메타? 손절귀신? 껄무새? 지금 바로 테스트해보세요!" />
+  <meta property="og:title" content="나는 어떤 투자 유형일까? 🤔" />
+  <meta property="og:description" content="8문항으로 알아보는 내 투자 성격 유형 테스트!" />
+  <meta property="og:type" content="website" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;500;700;900&display=swap"
+    rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
 </head>
+
 <body>
 
-<!-- Ambient background glow -->
-<div class="ambient-bg"></div>
+  <!-- ===== START SCREEN ===== -->
+  <div id="screen-start" class="screen active">
 
-<div id="app">
-
-  <!-- ── START SCREEN ─────────────────────────────── -->
-  <section id="screen-start" class="screen active">
-    <div class="top-bar">
-      <div class="lang-toggle">
-        <button class="lang-btn active" data-lang="kr">한국어</button>
-        <button class="lang-btn" data-lang="en">EN</button>
-      </div>
+    <!-- 언어 토글 -->
+    <div class="lang-toggle">
+      <button class="lang-btn active" id="btn-kr" onclick="setLang('kr')">KR</button>
+      <button class="lang-btn" id="btn-en" onclick="setLang('en')">EN</button>
     </div>
 
+    <!-- 본문 -->
     <div class="start-content">
-      <div class="start-icon">📊</div>
+      <div class="start-emoji">💸</div>
+      <h1 class="start-title" data-i18n="startTitle">나는 어떤<br />투자 유형일까?</h1>
+      <p class="start-sub" data-i18n="startSub">8문항으로 알아보는 내 투자 성격 🤔</p>
+      <p class="start-hook" data-i18n="startHook">설마 나만 맨날 고점에 사는 거 아니겠지...?</p>
 
-      <div class="start-badge-row">
-        <span class="badge">12 Types</span>
-        <span class="badge">8 Questions</span>
-        <span class="badge">KR · EN</span>
-      </div>
-
-      <h1 class="start-title" id="start-title">투자 유형 테스트</h1>
-      <p class="start-title-en" id="start-title-en">Investment Personality Test</p>
-      <p class="start-desc" id="start-desc">8가지 질문으로 나의 투자 성격 유형을 발견하세요. 총 12가지 유형 중 당신은 어떤 투자자?</p>
-
-      <button class="btn-start" id="btn-start">테스트 시작하기 →</button>
-      <p class="start-share-hint" id="start-share-hint">결과를 SNS에 공유해보세요 📸</p>
-    </div>
-  </section>
-
-  <!-- ── QUESTION SCREEN ──────────────────────────── -->
-  <section id="screen-question" class="screen">
-    <div class="top-bar">
-      <button class="btn-back" id="btn-back" aria-label="Back">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M19 12H5M5 12l7-7M5 12l7 7"/>
-        </svg>
+      <button class="btn-primary" id="btn-start" onclick="startTest()">
+        테스트 시작하기 🚀
       </button>
-      <span class="top-bar-title">투자 유형 테스트</span>
-      <div class="lang-toggle">
-        <button class="lang-btn active" data-lang="kr">KR</button>
-        <button class="lang-btn" data-lang="en">EN</button>
+      <p class="start-meta" data-i18n="startMeta">총 8문항 · 약 1분 소요</p>
+    </div>
+
+  </div>
+
+  <!-- ===== QUESTION SCREEN ===== -->
+  <div id="screen-question" class="screen">
+
+    <!-- 헤더 -->
+    <div class="question-header">
+      <button class="btn-back" id="btn-back" onclick="goBack()">←</button>
+      <div class="progress-wrap">
+        <div class="progress-bar">
+          <div class="progress-fill" id="progress-fill"></div>
+        </div>
+        <span class="progress-label" id="progress-label">1 / 8</span>
       </div>
     </div>
 
-    <div class="progress-section">
-      <div class="progress-label">
-        <span class="progress-counter"><span id="progress-current">1</span> / <span id="progress-total">8</span></span>
+    <!-- 질문 영역 -->
+    <div class="question-body">
+      <span class="q-badge" id="q-badge">Q1</span>
+      <p class="q-text" id="q-text"></p>
+    </div>
+
+    <!-- 보기 -->
+    <div class="choices-list" id="choices-list">
+      <!-- JS로 주입 -->
+    </div>
+
+  </div>
+
+  <!-- ===== RESULT SCREEN ===== -->
+  <div id="screen-result" class="screen">
+
+    <div class="result-scroll">
+
+      <!-- 타이틀 -->
+      <div class="result-title-wrap">
+        <p class="result-eyebrow">🎉 결과 나왔다!</p>
+        <p class="result-desc" data-i18n="resultDesc">내 투자 성격은 바로...</p>
       </div>
-      <div class="progress-bar-track">
-        <div class="progress-bar-fill" id="progress-fill" style="width: 0%"></div>
-      </div>
-    </div>
 
-    <div class="question-card">
-      <span class="question-id-badge" id="question-id-badge">Q1</span>
-      <p class="question-text-kr" id="question-text-kr"></p>
-      <p class="question-text-en" id="question-text-en"></p>
-    </div>
+      <!-- 메인 결과 카드 -->
+      <div class="result-card" id="result-card">
+        <div class="result-emoji" id="result-emoji">🙏</div>
+        <h2 class="result-name" id="result-name">기도메타</h2>
+        <p class="result-tagline" id="result-tagline">분석은 끝났고… 이제 기도 시작.</p>
+        <div class="result-keywords" id="result-keywords"></div>
 
-    <div class="choices-list" id="choices-list"></div>
-
-    <div class="btn-next-wrap">
-      <button class="btn-next" id="btn-next" disabled>다음 →</button>
-    </div>
-  </section>
-
-  <!-- ── LOADING SCREEN ──────────────────────────── -->
-  <section id="screen-loading" class="screen">
-    <div class="loading-spinner"></div>
-    <p class="loading-text" id="loading-text">유형 분석 중…</p>
-    <p class="loading-sub" id="loading-sub">당신의 투자 DNA를 해독하고 있어요</p>
-  </section>
-
-  <!-- ── RESULT SCREEN ────────────────────────────── -->
-  <section id="screen-result" class="screen">
-    <div class="top-bar">
-      <div style="width:36px"></div>
-      <span class="top-bar-title">투자 유형 테스트</span>
-      <div class="lang-toggle">
-        <button class="lang-btn active" data-lang="kr">KR</button>
-        <button class="lang-btn" data-lang="en">EN</button>
-      </div>
-    </div>
-
-    <p class="result-label" id="result-label">결과가 나왔어요! 🎉</p>
-
-    <!-- Main Result Card -->
-    <div class="result-main-card">
-      <div class="card-header-badge" id="result-my-type-label">나의 투자 유형</div>
-      <div class="result-type-number" id="result-type-number">Type 01</div>
-      <span class="result-emoji" id="result-emoji">🙏</span>
-      <h2 class="result-type-name-kr" id="result-type-name-kr">기도메타</h2>
-      <p class="result-type-name-en" id="result-type-name-en">Thoughts &amp; Prayers Portfolio</p>
-      <div class="result-divider"></div>
-      <p class="result-tagline-kr" id="result-tagline-kr">"분석은 끝났고… 이제 기도 시작."</p>
-      <p class="result-tagline-en" id="result-tagline-en">"DD? I did my prayers."</p>
-      <div class="keywords-row" id="result-keywords"></div>
-    </div>
-
-    <!-- Opposite Type Card -->
-    <div class="result-opposite-card">
-      <div class="opposite-label" id="opposite-label">나의 정반대 유형</div>
-      <div class="opposite-content">
-        <span class="opposite-emoji" id="opposite-emoji">😢</span>
-        <div>
-          <div class="opposite-name-kr" id="opposite-name-kr">껄무새</div>
-          <div class="opposite-name-en" id="opposite-name-en">Shoulda Woulda Trader</div>
+        <!-- 밈 이미지 영역 -->
+        <div class="meme-frame" id="meme-frame">
+          <img class="meme-img" id="meme-img" src="" alt="meme" />
+          <div class="meme-placeholder" id="meme-placeholder">
+            <span class="meme-ph-emoji" id="meme-ph-emoji">😂</span>
+          </div>
         </div>
       </div>
-      <p class="opposite-tagline" id="opposite-tagline">"사면 빠지고, 팔면 오르고."</p>
+
+      <!-- 정반대 유형 카드 -->
+      <div class="opposite-card" id="opposite-card">
+        <p class="opposite-label" data-i18n="oppositeLabel">🆚 나의 정반대 유형</p>
+        <div class="opposite-type-row">
+          <span class="opposite-emoji" id="opposite-emoji">🕯️</span>
+          <p class="opposite-name" id="opposite-name">봉차트도사</p>
+        </div>
+        <div class="meet-bubble">
+          <span class="meet-tag" data-i18n="meetTag">우리 둘이 만나면?? 🤝</span>
+          <p class="opposite-meet" id="opposite-meet"></p>
+        </div>
+      </div>
+
+      <!-- 공유 섹션 -->
+      <div class="share-section">
+        <p class="share-title" data-i18n="shareTitle">내 결과 공유하기 📤</p>
+        <div class="share-buttons">
+          <!-- 카카오톡 (모바일 Web Share + fallback) -->
+          <button class="share-btn kakao" id="btn-share-kakao" onclick="shareKakao()">
+            <span class="share-icon">💬</span>
+            <span>카카오톡</span>
+          </button>
+          <!-- X (Twitter) -->
+          <button class="share-btn twitter" onclick="shareTwitter()">
+            <span class="share-icon">𝕏</span>
+            <span>X</span>
+          </button>
+          <!-- WhatsApp -->
+          <button class="share-btn whatsapp" onclick="shareWhatsapp()">
+            <span class="share-icon">📱</span>
+            <span>WhatsApp</span>
+          </button>
+          <!-- Facebook -->
+          <button class="share-btn facebook" onclick="shareFacebook()">
+            <span class="share-icon">f</span>
+            <span>Facebook</span>
+          </button>
+          <!-- 링크 복사 -->
+          <button class="share-btn copylink" onclick="shareResult()">
+            <span class="share-icon">🔗</span>
+            <span data-i18n="copyLink">링크 복사</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- 다시하기 -->
+      <div class="retry-wrap">
+        <button class="btn-retry" onclick="resetTest()" data-i18n="retry">🔄 다시하기</button>
+      </div>
+
     </div>
+  </div>
 
-    <!-- Meet Line Card -->
-    <div class="result-meet-card">
-      <div class="meet-label" id="meet-label">서로 만나면</div>
-      <p class="meet-text-kr" id="meet-text-kr"></p>
-      <p class="meet-text-en" id="meet-text-en"></p>
-    </div>
+  <!-- 공유 토스트 -->
+  <div class="toast" id="toast">🔗 링크가 복사됐어요!</div>
 
-    <!-- Action Buttons -->
-    <div class="result-actions">
-      <button class="btn-share" id="btn-save">📸 결과 카드 저장</button>
-      <button class="btn-copy" id="btn-copy">🔗 링크 복사</button>
-      <button class="btn-restart" id="btn-restart">🔄 다시하기</button>
-    </div>
-  </section>
-
-</div><!-- /#app -->
-
-<!-- Toast notification -->
-<div class="toast" id="toast"></div>
-
-<!-- Scripts -->
-<script src="data.js"></script>
-<script src="app.js"></script>
-
+  <script src="data.js"></script>
+  <script src="app.js"></script>
 </body>
+
 </html>
