@@ -22,6 +22,37 @@
   <!-- ===== START SCREEN ===== -->
   <div id="screen-start" class="screen active">
 
+    <!-- 언어 토글 -->
+    <div class="lang-toggle">
+      <button class="lang-btn active" id="btn-kr" onclick="setLang('kr')">KR</button>
+      <button class="lang-btn" id="btn-en" onclick="setLang('en')">EN</button>
+    </div>
+
+    <!-- 본문 -->
+    <div class="start-content">
+      <div class="start-emoji">💸</div>
+      <h1 class="start-title" data-i18n="startTitle">숨겨진 나의<br />투자 유형 찾아보기</h1>
+      <p class="start-sub" data-i18n="startSub">8문항으로 3분만에 알아보는 나의 투자 성격.</p>
+
+      <div class="start-illustration">
+        <div class="comic-bubble">
+          <p class="start-hook" data-i18n="startHook">설마 나만 맨날 고점에 사는 거 아니겠지...?</p>
+        </div>
+        <img class="main-character-img" id="main-character-img" src="memes/main_character.png" alt="익살스러운 투자자 캐릭터" />
+      </div>
+
+      <button class="btn-primary" id="btn-start" onclick="startTest()">
+        테스트 시작하기 🚀
+      </button>
+      <p class="start-meta" data-i18n="startMeta">총 8문항 · 약 3분 소요</p>
+    </div>
+
+  </div>
+
+  <!-- ===== QUESTION SCREEN ===== -->
+  <div id="screen-question" class="screen">
+
+    <!-- 헤더 -->
     <div class="question-header">
       <button class="btn-back" id="btn-back" onclick="goBack()">←</button>
       <div class="progress-wrap">
