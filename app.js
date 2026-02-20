@@ -64,6 +64,7 @@ const i18n = {
 Object.assign(i18n.kr, {
   startTitle: '숨겨진 나의\n투자 유형 찾아보기',
   startSub: '8문항으로 3분만에 알아보는 나의 투자 성격.',
+  guideTab: '유형 가이드',
   startNamePlaceholder: '이름(선택)',
   startHook: '설마 나만 맨날 고점에 사는 거 아니겠지...?',
   startMeta: '총 8문항 · 약 3분 소요',
@@ -86,6 +87,7 @@ Object.assign(i18n.kr, {
 
 Object.assign(i18n.en, {
   startSub: '8 questions reveal your investing personality.',
+  guideTab: 'Type Guide',
   startNamePlaceholder: 'Your name (optional)',
   startMeta: '8 questions · about 3 minutes',
   startParticipantsLoading: 'Loading participant count...',

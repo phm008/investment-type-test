@@ -82,6 +82,39 @@ body {
   color: #fff;
 }
 
+.guide-toggle {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  z-index: 10;
+}
+
+.guide-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 2px solid #2D2D2D;
+  background: var(--accent);
+  color: #2D2D2D;
+  text-decoration: none;
+  font-size: 12px;
+  font-weight: 800;
+  box-shadow: 2px 2px 0 rgba(45, 45, 45, 0.35);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.guide-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 3px 3px 0 rgba(45, 45, 45, 0.35);
+}
+
+.guide-btn:active {
+  transform: translateY(0);
+  box-shadow: 2px 2px 0 rgba(45, 45, 45, 0.35);
+}
+
 /* ===========================
    START SCREEN
    =========================== */
