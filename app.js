@@ -499,6 +499,7 @@ const SUPABASE_URL = 'https://hzlkywvkmbarewjxdbjp.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh6bGt5d3ZrbWJhcmV3anhkYmpwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE1NTM1MDUsImV4cCI6MjA4NzEyOTUwNX0.w3sUkUVJ2jVnSXIjng4BynhD1Ivjiqu9SQv7SzvosnQ';
 const COMMENT_FETCH_LIMIT = 200;
 const PARTICIPANT_KEYS = ['participants', 'total_participants'];
+const PARTICIPANT_CACHE_KEY = 'participants_last_known_v1';
 let commentsLoadedOnce = false;
 let participantsLoadedOnce = false;
 let commentsSupportReply = true;
@@ -548,6 +549,35 @@ function _formatParticipantsCount(value) {
   return Number(value).toLocaleString(locale);
 }
 
+function _getCachedParticipantsCount() {
+  try {
+    if (!window.localStorage) return null;
+    const raw = window.localStorage.getItem(PARTICIPANT_CACHE_KEY);
+    if (raw === null) return null;
+    const parsed = Number(raw);
+    return Number.isFinite(parsed) ? Math.max(0, Math.floor(parsed)) : null;
+  } catch (_) {
+    return null;
+  }
+}
+
+function _setCachedParticipantsCount(value) {
+  try {
+    if (!window.localStorage) return;
+    const normalized = Math.max(0, Math.floor(Number(value)));
+    if (!Number.isFinite(normalized)) return;
+    window.localStorage.setItem(PARTICIPANT_CACHE_KEY, String(normalized));
+  } catch (_) { }
+}
+
+function _restoreParticipantsFromCache() {
+  const cached = _getCachedParticipantsCount();
+  if (!Number.isFinite(cached)) return false;
+  participantsCount = cached;
+  participantsUnavailable = false;
+  return true;
+}
+
 function _renderParticipantsText() {
   const participantsEl = document.getElementById('start-participants');
   if (!participantsEl) return;
@@ -574,8 +604,10 @@ function scheduleLoadParticipants() {
   participantsLoadedOnce = true;
   setTimeout(() => {
     loadParticipantsCount().catch(() => {
-      participantsCount = null;
-      participantsUnavailable = true;
+      if (!_restoreParticipantsFromCache()) {
+        participantsCount = null;
+        participantsUnavailable = true;
+      }
       _renderParticipantsText();
     });
   }, 0);
@@ -585,8 +617,10 @@ async function loadParticipantsCount() {
   const client = _getSupabaseClient();
   participantsUnavailable = false;
   if (!client) {
-    participantsCount = null;
-    participantsUnavailable = true;
+    if (!_restoreParticipantsFromCache()) {
+      participantsCount = null;
+      participantsUnavailable = true;
+    }
     _renderParticipantsText();
     return;
   }
@@ -602,6 +636,7 @@ async function loadParticipantsCount() {
     if (Number.isFinite(value)) {
       participantsCount = Math.max(0, Math.floor(value));
       participantsUnavailable = false;
+      _setCachedParticipantsCount(participantsCount);
       _renderParticipantsText();
       return;
     }
@@ -610,19 +645,24 @@ async function loadParticipantsCount() {
   if (!error && Array.isArray(data) && data.length === 0) {
     participantsCount = 0;
     participantsUnavailable = false;
+    _setCachedParticipantsCount(participantsCount);
     _renderParticipantsText();
     return;
   }
 
-  participantsCount = null;
-  participantsUnavailable = true;
+  if (!_restoreParticipantsFromCache()) {
+    participantsCount = null;
+    participantsUnavailable = true;
+  }
   _renderParticipantsText();
 }
 
 async function recordParticipationIfNeeded() {
   const client = _getSupabaseClient();
   if (!client) {
-    participantsUnavailable = true;
+    if (!_restoreParticipantsFromCache()) {
+      participantsUnavailable = true;
+    }
     _renderParticipantsText();
     return;
   }
@@ -632,6 +672,7 @@ async function recordParticipationIfNeeded() {
   if (!error && Number.isFinite(Number(data))) {
     participantsCount = Number(data);
     participantsUnavailable = false;
+    _setCachedParticipantsCount(participantsCount);
     committed = true;
   }
 
@@ -641,6 +682,7 @@ async function recordParticipationIfNeeded() {
     if (!error2 && Number.isFinite(Number(data2))) {
       participantsCount = Number(data2);
       participantsUnavailable = false;
+      _setCachedParticipantsCount(participantsCount);
       committed = true;
     }
   }
@@ -662,6 +704,7 @@ async function recordParticipationIfNeeded() {
         if (!upsertError) {
           participantsCount = nextCount;
           participantsUnavailable = false;
+          _setCachedParticipantsCount(participantsCount);
           committed = true;
           break;
         }
@@ -669,7 +712,7 @@ async function recordParticipationIfNeeded() {
     }
   }
 
-  if (!committed) participantsUnavailable = true;
+  if (!committed && !_restoreParticipantsFromCache()) participantsUnavailable = true;
   _renderParticipantsText();
 }
 
