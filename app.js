@@ -60,6 +60,36 @@ const i18n = {
   }
 };
 
+Object.assign(i18n.kr, {
+  startTitle: '숨겨진 나의\n투자 유형 찾아보기',
+  startSub: '8문항으로 3분만에 알아보는 나의 투자 성격.',
+  startHook: '설마 나만 맨날 고점에 사는 거 아니겠지...?',
+  startMeta: '총 8문항 · 약 3분 소요',
+  resultDesc: '내 투자 성격은 바로...',
+  primaryTypeLabel: '주유형',
+  secondaryTypeLabel: '보조유형',
+  confidenceLabel: '신뢰도',
+  confidenceHintLow: '혼합형 성향이 강해요. 주유형과 보조유형을 함께 참고해보세요.',
+  oppositeLabel: '👀 나와 정반대인 유형',
+  meetTag: '우리 둘이 만나면... 🤝',
+  shareTitle: '📤 결과 공유하기',
+  copyLink: '링크 복사',
+  retry: '🔄 테스트 다시하기',
+  toastCopied: '🔗 링크가 복사됐어요!',
+  shareText: '나는 투자 유형 테스트에서 {{name}} 나왔어!\n너도 해볼래? 💸'
+});
+
+Object.assign(i18n.en, {
+  startSub: '8 questions reveal your investing personality.',
+  startMeta: '8 questions · about 3 minutes',
+  oppositeLabel: '👀 Your Opposite Type',
+  meetTag: 'If we ever meet... 🤝',
+  shareTitle: '📤 Share my result',
+  retry: '🔄 Try Again',
+  toastCopied: '🔗 Link copied!',
+  shareText: 'I got {{name}} on the Investor Type Test!\nTake it too 💸'
+});
+
 // === MEME IMAGE MAP ===
 const MEME_IMAGES = {
   "01": "memes/meme_01_pray.png",
@@ -401,7 +431,11 @@ function resetTest() {
 // ===========================
 const SUPABASE_URL = 'https://hzlkywvkmbarewjxdbjp.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh6bGt5d3ZrbWJhcmV3anhkYmpwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE1NTM1MDUsImV4cCI6MjA4NzEyOTUwNX0.w3sUkUVJ2jVnSXIjng4BynhD1Ivjiqu9SQv7SzvosnQ';
+const COMMENT_FETCH_LIMIT = 200;
 let commentsLoadedOnce = false;
+let commentsSupportReply = true;
+let latestComments = [];
+let openReplyFormId = null;
 
 function _getSupabaseClient() {
   if (!window.supabase || typeof window.supabase.createClient !== 'function') {
@@ -433,6 +467,118 @@ function _escapeHtml(text) {
     .replaceAll("'", '&#39;');
 }
 
+function _encodeCommentId(id) {
+  return encodeURIComponent(String(id ?? ''));
+}
+
+function _decodeCommentId(encodedId) {
+  try {
+    return decodeURIComponent(encodedId);
+  } catch (_) {
+    return String(encodedId ?? '');
+  }
+}
+
+function _isParentColumnMissing(error) {
+  const msg = String(error?.message || '').toLowerCase();
+  if (!msg) return false;
+  return msg.includes('parent_id') && (msg.includes('column') || msg.includes('schema cache'));
+}
+
+function _normalizeComments(rows, supportsReply) {
+  return (rows || []).map((row) => ({
+    id: String(row.id),
+    nickname: row.nickname || '익명',
+    content: row.content || '',
+    created_at: row.created_at,
+    parent_id: supportsReply && row.parent_id ? String(row.parent_id) : null
+  }));
+}
+
+function _buildCommentTree(rows) {
+  const nodes = rows.map((row) => ({ ...row, children: [] }));
+  const byId = new Map(nodes.map((node) => [node.id, node]));
+  const roots = [];
+
+  for (const node of nodes) {
+    if (node.parent_id && byId.has(node.parent_id)) {
+      byId.get(node.parent_id).children.push(node);
+    } else {
+      roots.push(node);
+    }
+  }
+
+  const asc = (a, b) => new Date(a.created_at) - new Date(b.created_at);
+  const sortChildren = (list) => {
+    list.sort(asc);
+    for (const item of list) sortChildren(item.children);
+  };
+
+  sortChildren(roots);
+  roots.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  return roots;
+}
+
+function _renderReplyForm(commentId) {
+  const encodedId = _encodeCommentId(commentId);
+  const formId = `reply-form-${encodedId}`;
+  return `
+    <form class="reply-form hidden" id="${formId}" onsubmit="submitReply(event, '${encodedId}')">
+      <div class="reply-inputs">
+        <input type="text" name="reply-nickname" placeholder="닉네임" required maxlength="10" />
+        <input type="password" name="reply-password" placeholder="비밀번호(삭제용)" required maxlength="20" />
+      </div>
+      <textarea name="reply-content" placeholder="답글을 남겨주세요." rows="2" required></textarea>
+      <div class="reply-actions">
+        <button type="button" class="comment-action-btn" onclick="closeReplyForm('${encodedId}')">취소</button>
+        <button type="submit" class="comment-action-btn solid">답글 등록</button>
+      </div>
+    </form>
+  `;
+}
+
+function _renderCommentNode(node, depth) {
+  const encodedId = _encodeCommentId(node.id);
+  const replyAction = commentsSupportReply
+    ? `<button type="button" class="comment-action-btn" onclick="toggleReplyForm('${encodedId}')">답글</button>`
+    : '';
+
+  const childrenHtml = node.children.map((child) => _renderCommentNode(child, depth + 1)).join('');
+  const nestedHtml = childrenHtml ? `<div class="comment-children">${childrenHtml}</div>` : '';
+
+  return `
+    <div class="comment-item${depth > 0 ? ' is-reply' : ''}">
+      <div class="comment-header">
+        <span class="comment-author">${_escapeHtml(node.nickname)}</span>
+        <span class="comment-date">${_formatCommentTime(node.created_at)}</span>
+      </div>
+      <p class="comment-text">${_escapeHtml(node.content)}</p>
+      <div class="comment-actions">
+        ${replyAction}
+        <button type="button" class="comment-action-btn danger" onclick="deleteComment('${encodedId}')">삭제</button>
+      </div>
+      ${commentsSupportReply ? _renderReplyForm(node.id) : ''}
+      ${nestedHtml}
+    </div>
+  `;
+}
+
+function _collectCommentBranchIds(rootId) {
+  const ids = new Set([String(rootId)]);
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (const row of latestComments) {
+      const parentId = row.parent_id ? String(row.parent_id) : null;
+      if (parentId && ids.has(parentId) && !ids.has(row.id)) {
+        ids.add(row.id);
+        changed = true;
+      }
+    }
+  }
+  return [...ids];
+}
+
 function scheduleLoadComments() {
   // Avoid repeated network calls while navigating results.
   if (commentsLoadedOnce) return;
@@ -446,6 +592,7 @@ async function loadComments() {
   const listEl = document.getElementById('comments-list');
   if (!listEl) return;
 
+  openReplyFormId = null;
   const client = _getSupabaseClient();
   if (!client) {
     listEl.innerHTML = '<div class="comments-empty">댓글 서버 연결을 준비 중입니다.</div>';
@@ -453,32 +600,49 @@ async function loadComments() {
   }
 
   listEl.innerHTML = '<div class="comments-loading">댓글을 불러오는 중...</div>';
-  const { data, error } = await client
+  commentsSupportReply = true;
+  let data = null;
+  let error = null;
+
+  ({ data, error } = await client
     .from('comments')
-    .select('id, nickname, content, created_at')
-    .order('created_at', { ascending: false })
-    .limit(100);
+    .select('id, nickname, content, created_at, parent_id')
+    .order('created_at', { ascending: true })
+    .limit(COMMENT_FETCH_LIMIT));
+
+  if (error && _isParentColumnMissing(error)) {
+    commentsSupportReply = false;
+    ({ data, error } = await client
+      .from('comments')
+      .select('id, nickname, content, created_at')
+      .order('created_at', { ascending: false })
+      .limit(COMMENT_FETCH_LIMIT));
+  }
 
   if (error) {
     listEl.innerHTML = '<div class="comments-empty">댓글을 불러오지 못했어요.</div>';
     return;
   }
 
-  if (!data || data.length === 0) {
+  const rows = _normalizeComments(data, commentsSupportReply);
+  latestComments = rows;
+
+  if (rows.length === 0) {
     listEl.innerHTML = '<div class="comments-empty">첫 댓글을 남겨보세요 👋</div>';
     return;
   }
 
-  listEl.innerHTML = data.map((c) => `
-    <div class="comment-item">
-      <div class="comment-header">
-        <span class="comment-author">${_escapeHtml(c.nickname)}</span>
-        <span class="comment-date">${_formatCommentTime(c.created_at)}</span>
-      </div>
-      <p class="comment-text">${_escapeHtml(c.content)}</p>
-      <button class="comment-delete-btn" onclick="deleteComment('${_escapeHtml(c.id)}')">삭제</button>
-    </div>
-  `).join('');
+  if (!commentsSupportReply) {
+    const flatRows = rows.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    listEl.innerHTML = `
+      <div class="comments-note">답글 기능은 DB 설정 후 자동으로 활성화됩니다.</div>
+      ${flatRows.map((row) => _renderCommentNode({ ...row, children: [] }, 0)).join('')}
+    `;
+    return;
+  }
+
+  const tree = _buildCommentTree(rows);
+  listEl.innerHTML = tree.map((node) => _renderCommentNode(node, 0)).join('');
 }
 
 async function submitComment(e) {
@@ -503,9 +667,12 @@ async function submitComment(e) {
 
   submitBtn.disabled = true;
   try {
+    const payload = commentsSupportReply
+      ? { nickname, password, content, parent_id: null }
+      : { nickname, password, content };
     const { error } = await client
       .from('comments')
-      .insert([{ nickname, password, content }]);
+      .insert([payload]);
 
     if (error) {
       showToast('댓글 등록 실패');
@@ -522,7 +689,96 @@ async function submitComment(e) {
   }
 }
 
-async function deleteComment(id) {
+function toggleReplyForm(encodedId) {
+  if (!commentsSupportReply) {
+    showToast('답글 기능 설정이 필요합니다');
+    return;
+  }
+
+  const formId = `reply-form-${encodedId}`;
+  const targetForm = document.getElementById(formId);
+  if (!targetForm) return;
+
+  const shouldOpen = targetForm.classList.contains('hidden');
+  document.querySelectorAll('.reply-form').forEach((formEl) => {
+    formEl.classList.add('hidden');
+  });
+
+  if (!shouldOpen) {
+    openReplyFormId = null;
+    return;
+  }
+
+  targetForm.classList.remove('hidden');
+  openReplyFormId = encodedId;
+  const textarea = targetForm.querySelector('textarea');
+  if (textarea) textarea.focus();
+}
+
+function closeReplyForm(encodedId) {
+  const formEl = document.getElementById(`reply-form-${encodedId}`);
+  if (!formEl) return;
+  formEl.classList.add('hidden');
+  if (openReplyFormId === encodedId) {
+    openReplyFormId = null;
+  }
+}
+
+async function submitReply(e, encodedParentId) {
+  e.preventDefault();
+  if (!commentsSupportReply) {
+    showToast('답글 기능 설정이 필요합니다');
+    return;
+  }
+
+  const parentId = _decodeCommentId(encodedParentId);
+  const formEl = e.currentTarget;
+  const nicknameEl = formEl.querySelector('input[name="reply-nickname"]');
+  const passwordEl = formEl.querySelector('input[name="reply-password"]');
+  const contentEl = formEl.querySelector('textarea[name="reply-content"]');
+  const submitBtn = formEl.querySelector('button[type="submit"]');
+  if (!nicknameEl || !passwordEl || !contentEl || !submitBtn) return;
+
+  const nickname = nicknameEl.value.trim();
+  const password = passwordEl.value.trim();
+  const content = contentEl.value.trim();
+  if (!nickname || !password || !content) return;
+
+  const client = _getSupabaseClient();
+  if (!client) {
+    showToast('댓글 서버 연결 실패');
+    return;
+  }
+
+  submitBtn.disabled = true;
+  try {
+    const { error } = await client
+      .from('comments')
+      .insert([{ nickname, password, content, parent_id: parentId }]);
+
+    if (error) {
+      if (_isParentColumnMissing(error)) {
+        commentsSupportReply = false;
+        showToast('답글용 DB 컬럼 설정이 필요합니다');
+      } else {
+        showToast('답글 등록 실패');
+      }
+      return;
+    }
+
+    nicknameEl.value = '';
+    passwordEl.value = '';
+    contentEl.value = '';
+    closeReplyForm(encodedParentId);
+    await loadComments();
+    showToast('답글이 등록됐어요!');
+  } finally {
+    submitBtn.disabled = false;
+  }
+}
+
+async function deleteComment(encodedId) {
+  const id = _decodeCommentId(encodedId);
   const pwd = prompt('삭제 비밀번호를 입력해주세요.');
   if (pwd === null) return;
   const password = pwd.trim();
@@ -550,10 +806,20 @@ async function deleteComment(id) {
     return;
   }
 
-  const { error: deleteError } = await client
-    .from('comments')
-    .delete()
-    .eq('id', id);
+  let deleteError = null;
+  const idsToDelete = commentsSupportReply ? _collectCommentBranchIds(id) : [id];
+
+  if (idsToDelete.length > 1) {
+    ({ error: deleteError } = await client
+      .from('comments')
+      .delete()
+      .in('id', idsToDelete));
+  } else {
+    ({ error: deleteError } = await client
+      .from('comments')
+      .delete()
+      .eq('id', id));
+  }
 
   if (deleteError) {
     showToast('댓글 삭제 실패');

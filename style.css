@@ -829,12 +829,28 @@ body {
   padding: 10px 0;
 }
 
+.comments-note {
+  color: #8A6A2D;
+  background: #FFF8E8;
+  border: 1px solid #F3DEB2;
+  border-radius: 10px;
+  font-size: 12px;
+  text-align: center;
+  padding: 8px 10px;
+}
+
 .comment-item {
-  position: relative;
   border: 1.5px solid var(--border);
   border-radius: 10px;
   background: #fff;
   padding: 10px 12px;
+}
+
+.comment-item.is-reply {
+  margin-top: 8px;
+  margin-left: 14px;
+  background: #FFFCF4;
+  border-style: dashed;
 }
 
 .comment-header {
@@ -860,21 +876,86 @@ body {
   font-size: 13px;
   line-height: 1.45;
   color: var(--text);
-  margin-right: 44px;
   white-space: pre-wrap;
   word-break: break-word;
+  margin-bottom: 6px;
 }
 
-.comment-delete-btn {
-  position: absolute;
-  right: 10px;
-  bottom: 10px;
-  border: 0;
-  background: transparent;
-  color: #C33C3C;
+.comment-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.comment-action-btn {
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--text-muted);
   font-size: 11px;
   font-weight: 700;
+  padding: 4px 10px;
+  line-height: 1.2;
   cursor: pointer;
+}
+
+.comment-action-btn.solid {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
+}
+
+.comment-action-btn.danger {
+  color: #C33C3C;
+  border-color: #F1B3B3;
+}
+
+.comment-children {
+  margin-top: 8px;
+}
+
+.reply-form {
+  margin-top: 8px;
+  border: 1px solid #F3DEB2;
+  border-radius: 10px;
+  background: #FFFDF7;
+  padding: 8px;
+}
+
+.reply-inputs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.reply-form input,
+.reply-form textarea {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 12px;
+  font-family: var(--font-body);
+  background: #fff;
+}
+
+.reply-form textarea {
+  resize: vertical;
+  min-height: 64px;
+}
+
+.reply-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+@media (max-width: 420px) {
+  .reply-inputs {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* ===========================
