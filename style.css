@@ -1,4 +1,4 @@
-/* ============================================
+﻿/* ============================================
    투자 유형 테스트 — 캐주얼/밈 스타일 v2
    나노바나나 | Mobile-First
    ============================================ */
@@ -1104,4 +1104,49 @@ body {
   body {
     background: var(--bg);
   }
+}
+
+/* ===========================
+   SITE FOOTER
+   =========================== */
+.site-footer {
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 14px 20px 22px;
+  text-align: center;
+}
+
+.site-footer-inline {
+  max-width: none;
+  padding: 20px 0 0;
+}
+
+.site-footer-links {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px 10px;
+}
+
+.site-footer-links a {
+  font-size: 12px;
+  color: #6B6253;
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+}
+
+.site-footer-links a:hover {
+  color: var(--text);
+  border-color: #BDAE95;
+}
+
+.site-footer-copy {
+  margin-top: 8px;
+  font-size: 11px;
+  color: #94856C;
+}
+
+.site-footer-copy a {
+  color: inherit;
 }
