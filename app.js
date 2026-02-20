@@ -11,7 +11,8 @@ let state = {
   totalScores: { A: 0, B: 0, C: 0, D: 0, E: 0, F: 0 },
   resultTypeId: null,
   resultRanking: null,
-  confidence: null
+  confidence: null,
+  userName: ''
 };
 
 // === i18n STRINGS ===
@@ -63,6 +64,7 @@ const i18n = {
 Object.assign(i18n.kr, {
   startTitle: '숨겨진 나의\n투자 유형 찾아보기',
   startSub: '8문항으로 3분만에 알아보는 나의 투자 성격.',
+  startNamePlaceholder: '이름(선택)',
   startHook: '설마 나만 맨날 고점에 사는 거 아니겠지...?',
   startMeta: '총 8문항 · 약 3분 소요',
   startParticipantsLoading: '지금까지 참여자 집계 중...',
@@ -84,6 +86,7 @@ Object.assign(i18n.kr, {
 
 Object.assign(i18n.en, {
   startSub: '8 questions reveal your investing personality.',
+  startNamePlaceholder: 'Your name (optional)',
   startMeta: '8 questions · about 3 minutes',
   startParticipantsLoading: 'Loading participant count...',
   startParticipantsTemplate: '{{count}} participants so far',
@@ -184,11 +187,17 @@ function applyI18n() {
   if (btnStart) {
     btnStart.textContent = state.lang === 'kr' ? '테스트 시작하기 🚀' : 'Start Test 🚀';
   }
+  const userNameInput = document.getElementById('test-user-name');
+  if (userNameInput && strings.startNamePlaceholder) {
+    userNameInput.placeholder = strings.startNamePlaceholder;
+  }
   _renderParticipantsText();
 }
 
 // === START TEST ===
 function startTest() {
+  const userNameInput = document.getElementById('test-user-name');
+  state.userName = userNameInput ? userNameInput.value.trim().slice(0, 20) : '';
   recordParticipationIfNeeded().catch(() => { });
   state.currentQ = 0;
   state.answers = [];
@@ -283,10 +292,23 @@ function _renderResult(typeId, ranking, confidence) {
   const pairKey = getPairKey(typeId, type.oppositeId);
   const pair = PAIRS[pairKey];
   const lang = state.lang;
+  const userName = (state.userName || '').trim();
 
   document.getElementById('result-emoji').textContent = type.emoji;
   document.getElementById('result-name').textContent = type.name[lang];
   document.getElementById('result-tagline').textContent = type.tagline[lang];
+  const resultUserlineEl = document.getElementById('result-userline');
+  if (resultUserlineEl) {
+    if (userName) {
+      resultUserlineEl.textContent = lang === 'kr'
+        ? `${userName}님의 결과`
+        : `Result for ${userName}`;
+      resultUserlineEl.classList.remove('hidden');
+    } else {
+      resultUserlineEl.textContent = '';
+      resultUserlineEl.classList.add('hidden');
+    }
+  }
 
   const kwrap = document.getElementById('result-keywords');
   kwrap.innerHTML = type.keywords[lang].map(k =>
@@ -370,7 +392,12 @@ function _getShareText() {
   const lang = state.lang;
   const typeId = state.resultTypeId;
   const typeName = typeId ? TYPES[typeId].name[lang] : '';
-  return i18n[lang].shareText.replace('{{name}}', typeName);
+  const baseText = i18n[lang].shareText.replace('{{name}}', typeName);
+  const userName = (state.userName || '').trim();
+  if (!userName) return baseText;
+  return lang === 'kr'
+    ? `${userName}님의 테스트 결과!\n${baseText}`
+    : `${userName}'s test result!\n${baseText}`;
 }
 
 // 링크 복사 (기존)
@@ -452,7 +479,8 @@ function resetTest() {
     totalScores: { A: 0, B: 0, C: 0, D: 0, E: 0, F: 0 },
     resultTypeId: null,
     resultRanking: null,
-    confidence: null
+    confidence: null,
+    userName: state.userName
   };
   const url = new URL(window.location.href);
   url.searchParams.delete('type');
