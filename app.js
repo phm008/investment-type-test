@@ -65,6 +65,7 @@ Object.assign(i18n.kr, {
   startSub: '8문항으로 3분만에 알아보는 나의 투자 성격.',
   startHook: '설마 나만 맨날 고점에 사는 거 아니겠지...?',
   startMeta: '총 8문항 · 약 3분 소요',
+  startDisclaimer: '본 테스트는 투자 권유가 아니며, 재미를 위한 성향 콘텐츠입니다.',
   resultDesc: '내 투자 성격은 바로...',
   primaryTypeLabel: '주유형',
   secondaryTypeLabel: '보조유형',
@@ -82,6 +83,7 @@ Object.assign(i18n.kr, {
 Object.assign(i18n.en, {
   startSub: '8 questions reveal your investing personality.',
   startMeta: '8 questions · about 3 minutes',
+  startDisclaimer: 'This test is for entertainment and does not constitute investment advice.',
   oppositeLabel: '👀 Your Opposite Type',
   meetTag: 'If we ever meet... 🤝',
   shareTitle: '📤 Share my result',
