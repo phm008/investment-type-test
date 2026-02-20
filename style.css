@@ -140,7 +140,7 @@ body {
   border-radius: 14px;
   border: 2px solid var(--text);
   box-shadow: 4px 4px 0 rgba(45, 45, 45, 0.3);
-  background: linear-gradient(180deg, #FFF2DF 0%, #FFE8D3 100%);
+  background: #FFF2DF;
   padding: 14px;
 }
 
@@ -670,22 +670,20 @@ body {
 
 .share-buttons {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 8px;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
 }
 
 .share-btn {
   display: flex;
-  flex-direction: column;
+  justify-content: center;
   align-items: center;
-  gap: 5px;
-  padding: 10px 4px;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  padding: 0;
   border: none;
   border-radius: 12px;
   cursor: pointer;
-  font-size: 10px;
-  font-weight: 700;
-  font-family: var(--font-body);
   transition: all 0.2s;
 }
 
@@ -698,8 +696,12 @@ body {
 }
 
 .share-icon {
-  font-size: 22px;
+  font-size: 24px;
   line-height: 1;
+}
+
+.share-btn span:not(.share-icon) {
+  display: none;
 }
 
 .share-btn.kakao {
@@ -708,17 +710,16 @@ body {
 }
 
 .share-btn.kakao .share-icon {
-  font-size: 20px;
+  font-size: 24px;
 }
 
 .share-btn.twitter {
   background: #000000;
   color: #FFFFFF;
-  font-size: 22px;
 }
 
 .share-btn.twitter .share-icon {
-  font-size: 20px;
+  font-size: 24px;
   font-weight: 900;
   font-style: normal;
   font-family: 'Georgia', serif;
@@ -732,11 +733,10 @@ body {
 .share-btn.facebook {
   background: #1877F2;
   color: #FFFFFF;
-  font-size: 22px;
 }
 
 .share-btn.facebook .share-icon {
-  font-size: 22px;
+  font-size: 24px;
   font-weight: 900;
   font-family: 'Georgia', serif;
 }
@@ -1069,6 +1069,6 @@ body {
   }
 
   body {
-    background: #F5EDE0;
+    background: var(--bg);
   }
 }
