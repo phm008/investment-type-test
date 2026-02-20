@@ -555,6 +555,13 @@ function _renderParticipantsText() {
   participantsEl.textContent = template.replace('{{count}}', _formatParticipantsCount(participantsCount));
 }
 
+function _incrementParticipantsFallback() {
+  const base = Number.isFinite(Number(participantsCount))
+    ? Math.max(0, Math.floor(Number(participantsCount)))
+    : 0;
+  participantsCount = base + 1;
+}
+
 function scheduleLoadParticipants() {
   if (participantsLoadedOnce) {
     _renderParticipantsText();
@@ -606,7 +613,11 @@ async function loadParticipantsCount() {
 
 async function recordParticipationIfNeeded() {
   const client = _getSupabaseClient();
-  if (!client) return;
+  if (!client) {
+    _incrementParticipantsFallback();
+    _renderParticipantsText();
+    return;
+  }
 
   let committed = false;
   const { data, error } = await client.rpc('increment_participants');
@@ -615,8 +626,8 @@ async function recordParticipationIfNeeded() {
     committed = true;
   }
 
-  // Fallback when RPC is not created yet.
-  if (!committed && _isMissingResource(error, 'increment_participants')) {
+  // Fallback for RPC failures (missing function, permission, temporary errors).
+  if (!committed) {
     const { data: row, error: readError } = await client
       .from('test_stats')
       .select('value')
@@ -635,7 +646,11 @@ async function recordParticipationIfNeeded() {
     }
   }
 
-  if (committed) _renderParticipantsText();
+  if (!committed) {
+    // Always reflect a click in the UI even if backend persistence fails.
+    _incrementParticipantsFallback();
+  }
+  _renderParticipantsText();
 }
 
 function _encodeCommentId(id) {
