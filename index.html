@@ -14,6 +14,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;500;700;900&display=swap"
     rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 
 <body>
@@ -21,31 +22,6 @@
   <!-- ===== START SCREEN ===== -->
   <div id="screen-start" class="screen active">
 
-    <!-- 언어 토글 -->
-    <div class="lang-toggle">
-      <button class="lang-btn active" id="btn-kr" onclick="setLang('kr')">KR</button>
-      <button class="lang-btn" id="btn-en" onclick="setLang('en')">EN</button>
-    </div>
-
-    <!-- 본문 -->
-    <div class="start-content">
-      <div class="start-emoji">💸</div>
-      <h1 class="start-title" data-i18n="startTitle">나는 어떤<br />투자 유형일까?</h1>
-      <p class="start-sub" data-i18n="startSub">8문항으로 알아보는 내 투자 성격 🤔</p>
-      <p class="start-hook" data-i18n="startHook">설마 나만 맨날 고점에 사는 거 아니겠지...?</p>
-
-      <button class="btn-primary" id="btn-start" onclick="startTest()">
-        테스트 시작하기 🚀
-      </button>
-      <p class="start-meta" data-i18n="startMeta">총 8문항 · 약 1분 소요</p>
-    </div>
-
-  </div>
-
-  <!-- ===== QUESTION SCREEN ===== -->
-  <div id="screen-question" class="screen">
-
-    <!-- 헤더 -->
     <div class="question-header">
       <button class="btn-back" id="btn-back" onclick="goBack()">←</button>
       <div class="progress-wrap">
@@ -159,6 +135,26 @@
       <!-- 다시하기 -->
       <div class="retry-wrap">
         <button class="btn-retry" onclick="resetTest()" data-i18n="retry">🔄 다시하기</button>
+      </div>
+
+      <!-- 댓글창 섹션 -->
+      <div class="comments-section" id="comments-section">
+        <h3 class="comments-title">방명록 남기기 📝</h3>
+
+        <form id="comment-form" onsubmit="submitComment(event)">
+          <div class="comment-inputs">
+            <input type="text" id="comment-nickname" placeholder="닉네임" required maxlength="10">
+            <input type="password" id="comment-password" placeholder="비밀번호(삭제용)" required maxlength="20">
+          </div>
+          <div class="comment-textarea-wrap">
+            <textarea id="comment-content" placeholder="결과 어떠셨나요? 자유롭게 남겨주세요!" required rows="3"></textarea>
+            <button type="submit" class="btn-submit-comment">등록</button>
+          </div>
+        </form>
+
+        <div class="comments-list" id="comments-list">
+          <div class="comments-loading">댓글을 불러오는 중...</div>
+        </div>
       </div>
 
     </div>
