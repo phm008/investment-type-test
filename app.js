@@ -70,6 +70,7 @@ Object.assign(i18n.kr, {
   startMeta: '총 8문항 · 약 3분 소요',
   startParticipantsLoading: '지금까지 참여자 집계 중...',
   startParticipantsTemplate: '지금까지 {{count}}명 참여',
+  startParticipantsUnavailable: '참여자 집계 설정이 필요합니다',
   startDisclaimer: '본 테스트는 투자 권유가 아니며, 재미를 위한 성향 콘텐츠입니다.',
   resultDesc: '내 투자 성격은 바로...',
   primaryTypeLabel: '주유형',
@@ -92,6 +93,7 @@ Object.assign(i18n.en, {
   startMeta: '8 questions · about 3 minutes',
   startParticipantsLoading: 'Loading participant count...',
   startParticipantsTemplate: '{{count}} participants so far',
+  startParticipantsUnavailable: 'Participant counter is unavailable',
   startDisclaimer: 'This test is for entertainment and does not constitute investment advice.',
   oppositeLabel: '👀 Your Opposite Type',
   meetTag: 'If we ever meet... 🤝',
@@ -496,12 +498,14 @@ function resetTest() {
 const SUPABASE_URL = 'https://hzlkywvkmbarewjxdbjp.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh6bGt5d3ZrbWJhcmV3anhkYmpwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE1NTM1MDUsImV4cCI6MjA4NzEyOTUwNX0.w3sUkUVJ2jVnSXIjng4BynhD1Ivjiqu9SQv7SzvosnQ';
 const COMMENT_FETCH_LIMIT = 200;
+const PARTICIPANT_KEYS = ['participants', 'total_participants'];
 let commentsLoadedOnce = false;
 let participantsLoadedOnce = false;
 let commentsSupportReply = true;
 let latestComments = [];
 let openReplyFormId = null;
 let participantsCount = null;
+let participantsUnavailable = false;
 
 function _getSupabaseClient() {
   if (!window.supabase || typeof window.supabase.createClient !== 'function') {
@@ -548,6 +552,11 @@ function _renderParticipantsText() {
   const participantsEl = document.getElementById('start-participants');
   if (!participantsEl) return;
 
+  if (participantsUnavailable) {
+    participantsEl.textContent = i18n[state.lang].startParticipantsUnavailable;
+    return;
+  }
+
   if (participantsCount === null) {
     participantsEl.textContent = i18n[state.lang].startParticipantsLoading;
     return;
@@ -555,13 +564,6 @@ function _renderParticipantsText() {
 
   const template = i18n[state.lang].startParticipantsTemplate;
   participantsEl.textContent = template.replace('{{count}}', _formatParticipantsCount(participantsCount));
-}
-
-function _incrementParticipantsFallback() {
-  const base = Number.isFinite(Number(participantsCount))
-    ? Math.max(0, Math.floor(Number(participantsCount)))
-    : 0;
-  participantsCount = base + 1;
 }
 
 function scheduleLoadParticipants() {
@@ -573,6 +575,7 @@ function scheduleLoadParticipants() {
   setTimeout(() => {
     loadParticipantsCount().catch(() => {
       participantsCount = null;
+      participantsUnavailable = true;
       _renderParticipantsText();
     });
   }, 0);
@@ -580,43 +583,46 @@ function scheduleLoadParticipants() {
 
 async function loadParticipantsCount() {
   const client = _getSupabaseClient();
+  participantsUnavailable = false;
   if (!client) {
     participantsCount = null;
+    participantsUnavailable = true;
     _renderParticipantsText();
     return;
   }
 
-  let count = null;
   const { data, error } = await client
     .from('test_stats')
-    .select('value')
-    .eq('key', 'participants')
-    .maybeSingle();
+    .select('key, value')
+    .in('key', PARTICIPANT_KEYS);
 
-  if (!error && data && Number.isFinite(Number(data.value))) {
-    count = Number(data.value);
-  } else if (error && !_isMissingResource(error, 'test_stats')) {
-    count = null;
-  }
-
-  // Fallback: stats table is missing, show comment count to avoid empty UI.
-  if (count === null && (!error || _isMissingResource(error, 'test_stats'))) {
-    const { count: commentCount, error: countError } = await client
-      .from('comments')
-      .select('id', { count: 'exact', head: true });
-    if (!countError && Number.isFinite(Number(commentCount))) {
-      count = Number(commentCount);
+  if (!error && Array.isArray(data) && data.length > 0) {
+    const preferred = data.find((row) => row.key === 'participants') || data[0];
+    const value = Number(preferred?.value);
+    if (Number.isFinite(value)) {
+      participantsCount = Math.max(0, Math.floor(value));
+      participantsUnavailable = false;
+      _renderParticipantsText();
+      return;
     }
   }
 
-  participantsCount = Number.isFinite(Number(count)) ? Math.max(0, Math.floor(Number(count))) : null;
+  if (!error && Array.isArray(data) && data.length === 0) {
+    participantsCount = 0;
+    participantsUnavailable = false;
+    _renderParticipantsText();
+    return;
+  }
+
+  participantsCount = null;
+  participantsUnavailable = true;
   _renderParticipantsText();
 }
 
 async function recordParticipationIfNeeded() {
   const client = _getSupabaseClient();
   if (!client) {
-    _incrementParticipantsFallback();
+    participantsUnavailable = true;
     _renderParticipantsText();
     return;
   }
@@ -625,33 +631,45 @@ async function recordParticipationIfNeeded() {
   const { data, error } = await client.rpc('increment_participants');
   if (!error && Number.isFinite(Number(data))) {
     participantsCount = Number(data);
+    participantsUnavailable = false;
     committed = true;
+  }
+
+  // Backward-compatible RPC fallback.
+  if (!committed) {
+    const { data: data2, error: error2 } = await client.rpc('increment_total_participants');
+    if (!error2 && Number.isFinite(Number(data2))) {
+      participantsCount = Number(data2);
+      participantsUnavailable = false;
+      committed = true;
+    }
   }
 
   // Fallback for RPC failures (missing function, permission, temporary errors).
   if (!committed) {
-    const { data: row, error: readError } = await client
-      .from('test_stats')
-      .select('value')
-      .eq('key', 'participants')
-      .maybeSingle();
-
-    if (!readError || _isMissingResource(readError, 'test_stats')) {
-      const nextCount = Math.max(1, Math.floor(Number(row?.value || 0) + 1));
-      const { error: upsertError } = await client
+    for (const keyName of PARTICIPANT_KEYS) {
+      const { data: row, error: readError } = await client
         .from('test_stats')
-        .upsert({ key: 'participants', value: nextCount, updated_at: new Date().toISOString() }, { onConflict: 'key' });
-      if (!upsertError) {
-        participantsCount = nextCount;
-        committed = true;
+        .select('value')
+        .eq('key', keyName)
+        .maybeSingle();
+
+      if (!readError || _isMissingResource(readError, 'test_stats')) {
+        const nextCount = Math.max(1, Math.floor(Number(row?.value || 0) + 1));
+        const { error: upsertError } = await client
+          .from('test_stats')
+          .upsert({ key: keyName, value: nextCount, updated_at: new Date().toISOString() }, { onConflict: 'key' });
+        if (!upsertError) {
+          participantsCount = nextCount;
+          participantsUnavailable = false;
+          committed = true;
+          break;
+        }
       }
     }
   }
 
-  if (!committed) {
-    // Always reflect a click in the UI even if backend persistence fails.
-    _incrementParticipantsFallback();
-  }
+  if (!committed) participantsUnavailable = true;
   _renderParticipantsText();
 }
 
