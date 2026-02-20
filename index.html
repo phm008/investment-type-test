@@ -9,11 +9,13 @@
   <meta property="og:title" content="나는 어떤 투자 유형일까? 🤔" />
   <meta property="og:description" content="8문항으로 알아보는 내 투자 성격 유형 테스트!" />
   <meta property="og:type" content="website" />
+  <link rel="icon" type="image/svg+xml" href="favicon.svg?v=20260220-2" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;500;700;900&display=swap"
     rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 
 <body>
@@ -30,14 +32,45 @@
     <!-- 본문 -->
     <div class="start-content">
       <div class="start-emoji">💸</div>
-      <h1 class="start-title" data-i18n="startTitle">나는 어떤<br />투자 유형일까?</h1>
-      <p class="start-sub" data-i18n="startSub">8문항으로 알아보는 내 투자 성격 🤔</p>
-      <p class="start-hook" data-i18n="startHook">설마 나만 맨날 고점에 사는 거 아니겠지...?</p>
+      <h1 class="start-title" data-i18n="startTitle">숨겨진 나의<br />투자 유형 찾아보기</h1>
+      <p class="start-sub" data-i18n="startSub">8문항으로 3분만에 알아보는 나의 투자 성격.</p>
+
+      <div class="start-illustration">
+        <img class="main-character-img" id="main-character-img" src="memes/main_character.png?v=20260220-1" alt="익살스러운 투자자 캐릭터" />
+      </div>
+
+      <div class="start-name-wrap">
+        <input type="text" id="test-user-name" class="start-name-input" placeholder="이름(선택)" maxlength="20" />
+      </div>
 
       <button class="btn-primary" id="btn-start" onclick="startTest()">
         테스트 시작하기 🚀
       </button>
-      <p class="start-meta" data-i18n="startMeta">총 8문항 · 약 1분 소요</p>
+      <p class="start-participants" id="start-participants" data-i18n="startParticipantsLoading">지금까지 참여자 집계 중...</p>
+      <p class="start-meta" data-i18n="startMeta">총 8문항 · 약 3분 소요</p>
+      <p class="start-disclaimer" data-i18n="startDisclaimer">본 테스트는 투자 권유가 아니며, 재미를 위한 성향 콘텐츠입니다.</p>
+
+      <!-- 댓글창 섹션 -->
+      <div class="start-comments-wrap">
+        <div class="comments-section start-comments-section" id="comments-section">
+          <h3 class="comments-title">댓글</h3>
+
+          <form id="comment-form" onsubmit="submitComment(event)">
+            <div class="comment-inputs">
+              <input type="text" id="comment-nickname" placeholder="닉네임" required maxlength="10">
+              <input type="password" id="comment-password" placeholder="비밀번호(삭제용)" required maxlength="20">
+            </div>
+            <div class="comment-textarea-wrap">
+              <textarea id="comment-content" placeholder="댓글을 입력해 주세요" required rows="3"></textarea>
+              <button type="submit" class="btn-submit-comment">등록</button>
+            </div>
+          </form>
+
+          <div class="comments-list" id="comments-list">
+            <div class="comments-loading">댓글을 불러오는 중...</div>
+          </div>
+        </div>
+      </div>
     </div>
 
   </div>
@@ -77,6 +110,7 @@
       <!-- 타이틀 -->
       <div class="result-title-wrap">
         <p class="result-eyebrow">🎉 결과 나왔다!</p>
+        <p class="result-userline hidden" id="result-userline"></p>
         <p class="result-desc" data-i18n="resultDesc">내 투자 성격은 바로...</p>
       </div>
 
@@ -86,6 +120,21 @@
         <h2 class="result-name" id="result-name">기도메타</h2>
         <p class="result-tagline" id="result-tagline">분석은 끝났고… 이제 기도 시작.</p>
         <div class="result-keywords" id="result-keywords"></div>
+        <div class="result-mix hidden" id="result-mix">
+          <div class="mix-row">
+            <span class="mix-label" data-i18n="primaryTypeLabel">주유형</span>
+            <span class="mix-value" id="result-primary-name">🙏 기도메타</span>
+          </div>
+          <div class="mix-row">
+            <span class="mix-label" data-i18n="secondaryTypeLabel">보조유형</span>
+            <span class="mix-value" id="result-secondary-name">😢 껄무새</span>
+          </div>
+          <div class="mix-row confidence-row" id="confidence-wrap">
+            <span class="mix-label" data-i18n="confidenceLabel">신뢰도</span>
+            <span class="confidence-badge medium" id="confidence-badge">Medium</span>
+          </div>
+          <p class="confidence-hint hidden" id="confidence-hint"></p>
+        </div>
 
         <!-- 밈 이미지 영역 -->
         <div class="meme-frame" id="meme-frame">

@@ -1,7 +1,7 @@
 # 투자 유형 테스트 — 진행상황 (PROGRESS.md)
 
 > 다른 AI 또는 개발자가 이 프로젝트를 이어받을 때 참고하는 문서입니다.
-> 최종 업데이트: 2026-02-20
+> 최종 업데이트: 2026-02-19
 
 ---
 
@@ -16,15 +16,17 @@
 
 ```
 investment-type-test/
-├── index.html      # SPA 메인. 3개 화면(시작/질문/결과) 포함
-├── style.css       # 전체 스타일. 캐주얼 코랄-오렌지 테마
-├── data.js         # 12유형 데이터, 8문항, 채점 로직
-├── app.js          # 상태관리, 화면 전환, i18n, 공유 기능
-├── memes/          # 유형별 밈 이미지 폴더 (현재 비어 있음 → TODO)
+├── index.html                  # SPA 메인. 3개 화면(시작/질문/결과) 포함
+├── style.css                   # 전체 스타일. 캐주얼 코랄-오렌지 테마
+├── data.js                     # 12유형 데이터, 8문항, 채점 로직(v3)
+├── app.js                      # 상태관리, 화면 전환, i18n, 공유 기능
+├── scripts/
+│   └── evaluate-routing.js     # 65,536 루트 전수 검증 스크립트
+├── memes/                      # 유형별 밈 이미지 폴더 (현재 비어 있음 → TODO)
 │   ├── meme_01_pray.png
 │   ├── meme_02_study.png
 │   └── ... (12개 필요)
-└── PROGRESS.md     # 이 파일
+└── PROGRESS.md                 # 이 파일
 ```
 
 ---
@@ -35,31 +37,59 @@ investment-type-test/
 - 12가지 투자 유형 정의 (id, name, tagline, keywords, emoji, oppositeId)
 - 6개 대립쌍(PAIRS) + "서로 만나면" 문구
 - 8문항 + 선택지(4개씩) + 6개 축(A~F) 점수 매핑
-- 채점 함수 `determineType(scores)` — 12유형 중 최고점 유형 반환
 - KR/EN 이중 언어 지원
 
-### 2. UI/UX 구현
+### 2. 채점 엔진 v3 (공감도 개선)
+- 기존 단순 규칙 기반 채점에서 **정규화 + 가중 선형 모델**로 교체
+- `QUESTIONS` 기준 축 baseline 자동 계산 후 정규화 점수 사용
+- 신규 함수 추가:
+  - `computeTypeScores(scores)`
+  - `rankTypes(scores)`
+  - `getConfidence(scores)`
+- `determineType(scores)`는 호환용 래퍼로 유지
+- 문항 매핑 보정:
+  - 기존 미세 조정 + `Q3/Q7/Q8` 문항/선지 리디자인
+  - 중복 질문 축소 (정보원/손실반응 중복 완화)
+- 분포 균형 미세 보정:
+  - `04`, `08` 타입 score에 `*1.2` 가중 적용
 
-#### 시작 화면
-- 💸 이모지 바운스 애니메이션
-- 캐주얼 훅 문구 ("설마 나만 맨날 고점에 사는 거 아니겠지...?")
-- CTA 버튼: "테스트 시작하기 🚀"
-- KR/EN 언어 전환 토글
+### 3. UI/UX 업데이트
 
-#### 질문 화면
-- 진행 바 (코랄-오렌지 그라디언트, 부드러운 애니메이션)
-- Q1~Q8 배지 + 질문 텍스트
-- 4개 선택지 카드 (이모지 + 텍스트, 탭 시 선택 강조 후 다음 질문 자동 이동)
-- 뒤로가기 버튼 (이전 답변 점수 취소 포함)
+#### 시작/질문 화면
+- 기존 캐주얼 UX 유지 (진행바, 자동 다음, 뒤로가기 점수 복원)
 
 #### 결과 화면
-- 결과 유형 카드: 이모지 + 이름(Jua폰트 대형) + 태그라인 + 키워드 pill
-- **밈 이미지 프레임**: `memes/` 폴더의 이미지 로드. 없으면 유형 이모지로 폴백
-- **정반대 유형 카드**: 유형 이모지+이름 + "우리 둘이 만나면?? 🤝" 말풍선 + 설명
-- **소셜 공유 5종**: 카카오톡, X(Twitter), WhatsApp, Facebook, 링크복사
-- 다시하기 버튼
+- 기존 결과 카드 + 밈 프레임 + 정반대 유형 카드 유지
+- **혼합형 결과 노출 추가**:
+  - 주유형(1위), 보조유형(2위) 동시 표시
+  - 신뢰도 배지(High/Medium/Low)
+  - Low일 때 혼합형 안내 문구 표시
+- URL 파라미터 `?type=07` 직접 진입은 유지
+  - 점수 컨텍스트 없는 직접 진입에서는 혼합형 블록 숨김 처리
 
-### 3. 디자인 시스템
+### 4. 소셜/공유
+- 소셜 공유 5종 유지:
+  - 카카오톡, X(Twitter), WhatsApp, Facebook, 링크복사
+
+### 5. 자동 검증 체계 추가
+- `scripts/evaluate-routing.js` 추가
+- 검증 내용:
+  - 65,536 루트 전수 검사
+  - 타입 분포/동점률/margin 분포/타입별 단독 우승 횟수
+  - 대표 시나리오 회귀 테스트
+- 기준 미달 시 non-zero exit
+
+### 6. 최신 검증 결과 (현재 브랜치 기준)
+- 실행 명령: `node scripts/evaluate-routing.js`
+- 결과:
+  - 최대 타입 비중: **16.90%** (기준 <= 18%)
+  - 최소 타입 비중: **3.65%** (기준 >= 3%)
+  - 최상위 동점률: **0.34%** (기준 <= 5%)
+  - 모든 타입 단독 1등 존재: **PASS**
+  - `04` 단독 1등: **2536회**
+  - 대표 시나리오 4종: **PASS**
+
+### 7. 디자인 시스템
 | 항목 | 값 |
 |------|----|
 | 폰트 | Jua (한국어 제목), Noto Sans KR (본문) |
@@ -69,16 +99,12 @@ investment-type-test/
 | 카드 | 흰색, `border-radius: 18px`, 그림자 |
 | 레이아웃 | 모바일 우선, 최대 너비 480px |
 
-### 4. Stitch UI 디자인 (Project ID: 2324556674708316857)
+### 8. Stitch UI 디자인 (Project ID: 2324556674708316857)
 | 화면 | Screen ID |
 |------|----------|
 | 시작 화면 | `99a209770d13417599cb0482af47a4a2` |
 | 질문 화면 | `f6f0d52ddd9d46cc926f09fbfe2870a6` |
 | 결과 화면 | `818f08d4a9444117b3556eb125517b86` |
-
-### 5. 기타
-- URL 파라미터 `?type=07` 로 특정 결과 직접 접근 가능 (공유 링크 기능)
-- 광고 슬롯: **현재 제거 상태** → 나중에 Google AdSense 붙일 예정
 
 ---
 
@@ -109,22 +135,35 @@ investment-type-test/
 - [ ] **Google AdSense 연동**: `index.html`의 `<!-- 광고 자리 -->` 주석 위치에 `<ins class="adsbygoogle">` 코드 삽입
 - [ ] **OG 이미지 생성**: 공유 시 썸네일로 표시될 og:image 메타 태그 추가 (유형별 or 공통 1장)
 - [ ] **GA4(Google Analytics) 연동**: 유입 경로, 이탈율, 유형별 분포 추적
+- [ ] **실사용자 피드백 수집**: 표본 30~50명으로 체감 공감도 조사 후 질문/가중치 미세 튜닝
 
 ---
 
 ## 🔧 로컬 실행 방법
 
-별도 빌드 없음. `index.html`을 Chrome에서 직접 열면 바로 실행됩니다.
+별도 빌드 없음. `index.html`을 Chrome에서 직접 열면 실행됩니다.
 
 ```
 c:\Users\hyung\.gemini\antigravity\scratch\investment-type-test\index.html
+```
+
+채점 품질 검증:
+
+```
+node scripts/evaluate-routing.js
 ```
 
 ---
 
 ## 📦 Git / 배포
 
-- **브랜치**: `main`
+- **안정 브랜치**: `main`
+- **작업 브랜치(현재)**: `feature/scoring-rebalance-v2`
+- **원격 반영 상태**: `origin/feature/scoring-rebalance-v2` 푸시 완료
+- **최근 커밋**:
+  - `75cd230` feat: refine question set and rebalance type weights
+  - `26340d0` feat: rebalance scoring and add confidence-based dual result
+- **PR 링크**: https://github.com/phm008/investment-type-test/pull/new/feature/scoring-rebalance-v2
 - **배포 플랫폼**: Cloudflare Pages (예정)
 - **빌드 설정**: 빌드 명령어 없음(정적 파일), 루트 디렉토리 `/`
 
@@ -132,7 +171,14 @@ c:\Users\hyung\.gemini\antigravity\scratch\investment-type-test\index.html
 
 ## 💬 대화 이력
 
-이 프로젝트는 Antigravity AI와 나노바나나 팀이 두 차례 대화를 통해 개발했습니다.
+이 프로젝트는 Antigravity AI와 나노바나나 팀이 여러 차례 대화를 통해 진행했습니다.
 
 - **1차 대화** (`796884cc`): 기획안 기반 초기 구현 (다크/골드 프리미엄 테마, 12유형 채점 로직)
-- **2차 대화** (`da4c2d1d`): 캐주얼/밈 스타일 전면 리디자인, 공유 기능 5종, 정반대 유형 "우리 둘이 만나면" 섹션 추가
+- **2차 대화** (`da4c2d1d`): 캐주얼/밈 스타일 전면 리디자인, 공유 기능 5종, 정반대 유형 섹션 추가
+- **3차 대화** (`26340d0`): 채점 엔진 v3, 상위 2유형/신뢰도 UI, 전수검증 스크립트 도입
+- **4차 대화** (`75cd230`): `Q3/Q7/Q8` 질문 리디자인 + 분포 균형 가중치 미세 조정
+- **5차 대화 (최근 작업)**: 
+  - **시작 화면 개선**: 타이틀, 서브타이틀 텍스트("숨겨진 나의 투자 유형 찾아보기") 및 예상 소요시간(3분) 변경. 만화적 말풍선 UI 컨테이너 추가.
+  - **이미지 적용**: 한국 일상웹툰 스타일의 심플하고 귀여운 직장인 캐릭터(좌절/기도 연출) 생성 후 메인 그래픽으로 적용.
+  - **댓글/방명록 추가**: 회원가입 없는 하단 익명 방명록(닉네임, 내용, 삭제용 비밀번호) UI 구현 및 Supabase Database 연동 (조회, 등록, 비밀번호 대조 후 삭제 기능 완성).
+  - **발생한 문제 및 해결(Troubleshooting)**: PowerShell을 통한 스크립트(`>>`) 문자열 추가 시 UTF-16 및 UTF-8 인코딩이 혼용되어 `app.js`, `style.css` 에 구문 오류(SyntaxError, 잘못된 줄바꿈 `\n`) 발생. 배포 시 프론트엔드 브레이킹 에러를 유발함. 이를 해결하기 위해 git reset 후 Node.js의 fs.readFileSync / replace 기반 스크립트를 거쳐 UTF-8 포맷으로 안전하게 코드를 재생성 및 반영 중.
