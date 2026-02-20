@@ -35,14 +35,37 @@
       <p class="start-sub" data-i18n="startSub">8문항으로 3분만에 알아보는 나의 투자 성격.</p>
 
       <div class="start-illustration">
-        <img class="main-character-img" id="main-character-img" src="memes/main_character.png" alt="익살스러운 투자자 캐릭터" />
+        <img class="main-character-img" id="main-character-img" src="memes/main_character.png?v=20260220-1" alt="익살스러운 투자자 캐릭터" />
       </div>
 
       <button class="btn-primary" id="btn-start" onclick="startTest()">
         테스트 시작하기 🚀
       </button>
+      <p class="start-participants" id="start-participants" data-i18n="startParticipantsLoading">지금까지 참여자 집계 중...</p>
       <p class="start-meta" data-i18n="startMeta">총 8문항 · 약 3분 소요</p>
       <p class="start-disclaimer" data-i18n="startDisclaimer">본 테스트는 투자 권유가 아니며, 재미를 위한 성향 콘텐츠입니다.</p>
+
+      <!-- 댓글창 섹션 -->
+      <div class="start-comments-wrap">
+        <div class="comments-section start-comments-section" id="comments-section">
+          <h3 class="comments-title">시작 전에 한마디 💬</h3>
+
+          <form id="comment-form" onsubmit="submitComment(event)">
+            <div class="comment-inputs">
+              <input type="text" id="comment-nickname" placeholder="닉네임" required maxlength="10">
+              <input type="password" id="comment-password" placeholder="비밀번호(삭제용)" required maxlength="20">
+            </div>
+            <div class="comment-textarea-wrap">
+              <textarea id="comment-content" placeholder="테스트 전에 한마디 남겨주세요!" required rows="3"></textarea>
+              <button type="submit" class="btn-submit-comment">등록</button>
+            </div>
+          </form>
+
+          <div class="comments-list" id="comments-list">
+            <div class="comments-loading">댓글을 불러오는 중...</div>
+          </div>
+        </div>
+      </div>
     </div>
 
   </div>
@@ -164,26 +187,6 @@
       <!-- 다시하기 -->
       <div class="retry-wrap">
         <button class="btn-retry" onclick="resetTest()" data-i18n="retry">🔄 다시하기</button>
-      </div>
-
-      <!-- 댓글창 섹션 -->
-      <div class="comments-section" id="comments-section">
-        <h3 class="comments-title">방명록 남기기 📝</h3>
-
-        <form id="comment-form" onsubmit="submitComment(event)">
-          <div class="comment-inputs">
-            <input type="text" id="comment-nickname" placeholder="닉네임" required maxlength="10">
-            <input type="password" id="comment-password" placeholder="비밀번호(삭제용)" required maxlength="20">
-          </div>
-          <div class="comment-textarea-wrap">
-            <textarea id="comment-content" placeholder="결과 어떠셨나요? 자유롭게 남겨주세요!" required rows="3"></textarea>
-            <button type="submit" class="btn-submit-comment">등록</button>
-          </div>
-        </form>
-
-        <div class="comments-list" id="comments-list">
-          <div class="comments-loading">댓글을 불러오는 중...</div>
-        </div>
       </div>
 
     </div>

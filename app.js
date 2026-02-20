@@ -65,6 +65,8 @@ Object.assign(i18n.kr, {
   startSub: '8문항으로 3분만에 알아보는 나의 투자 성격.',
   startHook: '설마 나만 맨날 고점에 사는 거 아니겠지...?',
   startMeta: '총 8문항 · 약 3분 소요',
+  startParticipantsLoading: '지금까지 참여자 집계 중...',
+  startParticipantsTemplate: '지금까지 {{count}}명 참여',
   startDisclaimer: '본 테스트는 투자 권유가 아니며, 재미를 위한 성향 콘텐츠입니다.',
   resultDesc: '내 투자 성격은 바로...',
   primaryTypeLabel: '주유형',
@@ -83,6 +85,8 @@ Object.assign(i18n.kr, {
 Object.assign(i18n.en, {
   startSub: '8 questions reveal your investing personality.',
   startMeta: '8 questions · about 3 minutes',
+  startParticipantsLoading: 'Loading participant count...',
+  startParticipantsTemplate: '{{count}} participants so far',
   startDisclaimer: 'This test is for entertainment and does not constitute investment advice.',
   oppositeLabel: '👀 Your Opposite Type',
   meetTag: 'If we ever meet... 🤝',
@@ -93,6 +97,8 @@ Object.assign(i18n.en, {
 });
 
 // === MEME IMAGE MAP ===
+const ASSET_VERSION = '20260220-1';
+const MAIN_CHARACTER_IMAGE = 'memes/main_character.png';
 const MEME_IMAGES = {
   "01": "memes/meme_01_pray.png",
   "02": "memes/meme_02_study.png",
@@ -107,6 +113,29 @@ const MEME_IMAGES = {
   "11": "memes/meme_11_diverse.png",
   "12": "memes/meme_12_regret.png"
 };
+
+function _assetUrl(path) {
+  const separator = path.includes('?') ? '&' : '?';
+  return `${path}${separator}v=${ASSET_VERSION}`;
+}
+
+function _getMemeImageSrc(typeId) {
+  return _assetUrl(MEME_IMAGES[typeId] || MAIN_CHARACTER_IMAGE);
+}
+
+function _initMainCharacterImage() {
+  const mainImg = document.getElementById('main-character-img');
+  if (!mainImg) return;
+  mainImg.src = _assetUrl(MAIN_CHARACTER_IMAGE);
+}
+
+function _preloadMemeAssets() {
+  const imagePaths = [MAIN_CHARACTER_IMAGE, ...Object.values(MEME_IMAGES)];
+  imagePaths.forEach((path) => {
+    const img = new Image();
+    img.src = _assetUrl(path);
+  });
+}
 
 // === CHOICE EMOJIS ===
 const CHOICE_EMOJIS = [
@@ -125,8 +154,9 @@ function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById('screen-' + id).classList.add('active');
   window.scrollTo(0, 0);
-  if (id === 'result') {
+  if (id === 'start') {
     scheduleLoadComments();
+    scheduleLoadParticipants();
   }
 }
 
@@ -154,10 +184,12 @@ function applyI18n() {
   if (btnStart) {
     btnStart.textContent = state.lang === 'kr' ? '테스트 시작하기 🚀' : 'Start Test 🚀';
   }
+  _renderParticipantsText();
 }
 
 // === START TEST ===
 function startTest() {
+  recordParticipationIfNeeded().catch(() => { });
   state.currentQ = 0;
   state.answers = [];
   state.totalScores = { A: 0, B: 0, C: 0, D: 0, E: 0, F: 0 };
@@ -319,7 +351,7 @@ function _renderResult(typeId, ranking, confidence) {
   memeImg.onerror = () => {
     if (phEmoji) phEmoji.textContent = type.emoji;
   };
-  memeImg.src = MEME_IMAGES[typeId];
+  memeImg.src = _getMemeImageSrc(typeId);
 
   applyI18n();
 }
@@ -434,10 +466,13 @@ function resetTest() {
 const SUPABASE_URL = 'https://hzlkywvkmbarewjxdbjp.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh6bGt5d3ZrbWJhcmV3anhkYmpwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE1NTM1MDUsImV4cCI6MjA4NzEyOTUwNX0.w3sUkUVJ2jVnSXIjng4BynhD1Ivjiqu9SQv7SzvosnQ';
 const COMMENT_FETCH_LIMIT = 200;
+const PARTICIPANTS_KEY = 'investment_type_participated_v1';
 let commentsLoadedOnce = false;
+let participantsLoadedOnce = false;
 let commentsSupportReply = true;
 let latestComments = [];
 let openReplyFormId = null;
+let participantsCount = null;
 
 function _getSupabaseClient() {
   if (!window.supabase || typeof window.supabase.createClient !== 'function') {
@@ -467,6 +502,117 @@ function _escapeHtml(text) {
     .replaceAll('>', '&gt;')
     .replaceAll('"', '&quot;')
     .replaceAll("'", '&#39;');
+}
+
+function _isMissingResource(error, key) {
+  const msg = String(error?.message || '').toLowerCase();
+  if (!msg) return false;
+  return msg.includes(key) && (msg.includes('does not exist') || msg.includes('schema cache') || msg.includes('not found'));
+}
+
+function _formatParticipantsCount(value) {
+  const locale = state.lang === 'kr' ? 'ko-KR' : 'en-US';
+  return Number(value).toLocaleString(locale);
+}
+
+function _renderParticipantsText() {
+  const participantsEl = document.getElementById('start-participants');
+  if (!participantsEl) return;
+
+  if (participantsCount === null) {
+    participantsEl.textContent = i18n[state.lang].startParticipantsLoading;
+    return;
+  }
+
+  const template = i18n[state.lang].startParticipantsTemplate;
+  participantsEl.textContent = template.replace('{{count}}', _formatParticipantsCount(participantsCount));
+}
+
+function scheduleLoadParticipants() {
+  if (participantsLoadedOnce) {
+    _renderParticipantsText();
+    return;
+  }
+  participantsLoadedOnce = true;
+  setTimeout(() => {
+    loadParticipantsCount().catch(() => {
+      participantsCount = null;
+      _renderParticipantsText();
+    });
+  }, 0);
+}
+
+async function loadParticipantsCount() {
+  const client = _getSupabaseClient();
+  if (!client) {
+    participantsCount = null;
+    _renderParticipantsText();
+    return;
+  }
+
+  let count = null;
+  const { data, error } = await client
+    .from('test_stats')
+    .select('value')
+    .eq('key', 'participants')
+    .maybeSingle();
+
+  if (!error && data && Number.isFinite(Number(data.value))) {
+    count = Number(data.value);
+  } else if (error && !_isMissingResource(error, 'test_stats')) {
+    count = null;
+  }
+
+  // Fallback: stats table is missing, show comment count to avoid empty UI.
+  if (count === null && (!error || _isMissingResource(error, 'test_stats'))) {
+    const { count: commentCount, error: countError } = await client
+      .from('comments')
+      .select('id', { count: 'exact', head: true });
+    if (!countError && Number.isFinite(Number(commentCount))) {
+      count = Number(commentCount);
+    }
+  }
+
+  participantsCount = Number.isFinite(Number(count)) ? Math.max(0, Math.floor(Number(count))) : null;
+  _renderParticipantsText();
+}
+
+async function recordParticipationIfNeeded() {
+  const client = _getSupabaseClient();
+  if (!client || !window.localStorage) return;
+  if (window.localStorage.getItem(PARTICIPANTS_KEY) === '1') return;
+
+  let committed = false;
+  const { data, error } = await client.rpc('increment_participants');
+  if (!error && Number.isFinite(Number(data))) {
+    participantsCount = Number(data);
+    committed = true;
+  }
+
+  // Fallback when RPC is not created yet.
+  if (!committed && _isMissingResource(error, 'increment_participants')) {
+    const { data: row, error: readError } = await client
+      .from('test_stats')
+      .select('value')
+      .eq('key', 'participants')
+      .maybeSingle();
+
+    if (!readError || _isMissingResource(readError, 'test_stats')) {
+      const nextCount = Math.max(1, Math.floor(Number(row?.value || 0) + 1));
+      const { error: upsertError } = await client
+        .from('test_stats')
+        .upsert({ key: 'participants', value: nextCount, updated_at: new Date().toISOString() }, { onConflict: 'key' });
+      if (!upsertError) {
+        participantsCount = nextCount;
+        committed = true;
+      }
+    }
+  }
+
+  if (committed) {
+    window.localStorage.setItem(PARTICIPANTS_KEY, '1');
+    _renderParticipantsText();
+  }
 }
 
 function _encodeCommentId(id) {
@@ -582,7 +728,7 @@ function _collectCommentBranchIds(rootId) {
 }
 
 function scheduleLoadComments() {
-  // Avoid repeated network calls while navigating results.
+  // Avoid repeated network calls while navigating across screens.
   if (commentsLoadedOnce) return;
   commentsLoadedOnce = true;
   setTimeout(() => {
@@ -834,7 +980,11 @@ async function deleteComment(encodedId) {
 
 // === INIT ===
 (function init() {
+  _initMainCharacterImage();
+  _preloadMemeAssets();
   applyI18n();
+  scheduleLoadParticipants();
+  scheduleLoadComments();
   const params = new URLSearchParams(window.location.search);
   const typeParam = params.get('type');
   if (typeParam && TYPES[typeParam]) {
