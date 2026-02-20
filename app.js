@@ -494,7 +494,6 @@ function resetTest() {
 const SUPABASE_URL = 'https://hzlkywvkmbarewjxdbjp.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh6bGt5d3ZrbWJhcmV3anhkYmpwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE1NTM1MDUsImV4cCI6MjA4NzEyOTUwNX0.w3sUkUVJ2jVnSXIjng4BynhD1Ivjiqu9SQv7SzvosnQ';
 const COMMENT_FETCH_LIMIT = 200;
-const PARTICIPANTS_KEY = 'investment_type_participated_v1';
 let commentsLoadedOnce = false;
 let participantsLoadedOnce = false;
 let commentsSupportReply = true;
@@ -607,8 +606,7 @@ async function loadParticipantsCount() {
 
 async function recordParticipationIfNeeded() {
   const client = _getSupabaseClient();
-  if (!client || !window.localStorage) return;
-  if (window.localStorage.getItem(PARTICIPANTS_KEY) === '1') return;
+  if (!client) return;
 
   let committed = false;
   const { data, error } = await client.rpc('increment_participants');
@@ -637,10 +635,7 @@ async function recordParticipationIfNeeded() {
     }
   }
 
-  if (committed) {
-    window.localStorage.setItem(PARTICIPANTS_KEY, '1');
-    _renderParticipantsText();
-  }
+  if (committed) _renderParticipantsText();
 }
 
 function _encodeCommentId(id) {
